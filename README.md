@@ -19,28 +19,7 @@
 <A NAME="LINKS"><B>LINKS</B></A><br>
 <A href="http://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009 Paper</A>, <A href="http://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016 Paper</A><br>
 <A HREF="http://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/ShapeGradientDomain.x64.zip">Windows (x64) Executables</A><BR>
-<A href="http://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/ShapeGradientDomain.zip">Source Code</A><br> <!--<A HREF="https://github.com/mkazhdan/DMG">GitHub Repository</A><BR>-->
-<!--
-(Older Versions:
-<A href="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version7.0/">V7.0</A>,
-<A href="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version6.13a/">V6.13a</A>,
-<A href="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version6.13/">V6.13</A>,
-<A href="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version6.12/">V6.12</A>,
-<A href="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version6.11/">V6.11</A>,
-<A href="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version6.1/">V6.1</A>,
-<A href="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version6/">V6</A>,
-<A href="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version5.71/">V5.71</A>,
-<A href="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version5.6/">V5.6</A>,
-<A href="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version5.5a/">V5.5a</A>,
-<A HREF="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version5.1/">V5.1</A>,
-<A HREF="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version5/">V5</A>,
-<A HREF="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version4.51/">V4.51</A>,
-<A HREF="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version4.5/">V4.5</A>,
-<A HREF="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version4/">V4</A>,
-<A HREF="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version3/">V3</A>,
-<A HREF="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version2/">V2</A>,
-<A HREF="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version1/">V1</A>)
--->
+<A href="http://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/ShapeGradientDomain.zip">Source Code</A><br>
 <br>
 
 
@@ -167,13 +146,6 @@ To mitigate this, we first run an initial pass of normal smoothing (&gamma;=1).
 
 <HR>
 <A NAME="CHANGES"><B>CHANGES</B></A><br>
-<!--
-<A HREF="http://www.cs.jhu.edu/~misha/Code/PoissonRecon/Version3/">Version 3</A>:
-<OL>
-<LI> The implementation of the <b>--samplesPerNode</b> parameter has been modified so that a value of "1" more closely corresponds to a distribution with one sample per leaf node.
-<LI> The code has been modified to support compilation under MSVC 2010 and the associated solution and project files are now provided. (Due to a bug in the Visual Studios compiler, this required modifying the implementation of some of the bit-shifting operators.)
-</OL>
--->
 
 <HR>
 <A HREF="http://www.cs.jhu.edu/~misha">HOME</A>
