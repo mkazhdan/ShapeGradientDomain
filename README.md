@@ -131,7 +131,7 @@ If you are using Eigen and your implementation is backed by <A HREF="https://sof
 <LI> When the gradient scale (&beta;) is set to a value larger than 1, the gradients are amplified and the geometry is sharpened.
 <LI> As the value interpolation weight (&alpha;) is increased, the results better preserve the input gometry, and the smoothing/sharpening is restricted to the higher frequencies.
 </UL>
-<CENTER><IMG SRC="gd.jpg" HEIGHT=300></CENTER>
+<CENTER><IMG SRC="gd.jpg" WIDTH="100%"></CENTER>
 <LI> <B><U>Smoothing with metric modification</U></B>
 <UL>
 <LI> Since the input geometry is noisy, a direct estimation of curvature would result in large curvature estimates everywhere, resulting in metric amplification everywhere, thereby nullifying the effects of smoothing.<BR>
@@ -139,7 +139,7 @@ To mitigate this, we first run an initial pass of normal smoothing (&gamma;=1).
 <LI> As the value of the curvature weight (&epsilon;) is increased, the metric around sharp features is amplified, making it harder for the signal to diffuse across the features and resulting in edge-preserving smoothing.
 <LI> As the anisotrpic metric modification allows diffusion along direction of low curvature, these results exhibit a bit more smoothing near crease regions.
 </UL>
-<CENTER><IMG SRC="k.jpg" HEIGHT=300></CENTER>
+<CENTER><IMG SRC="k.jpg" WIDTH="100%"></CENTER>
 </UL>
 
 
