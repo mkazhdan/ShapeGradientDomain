@@ -84,8 +84,13 @@ The default value for this parameter is 0.0.<br>
 <DD> If this flag is enabled, the signal to be processed is the per-vertex color field. Otherwise, it is the vertex positions.<BR>
 If the flag is enabled and the input file does not contain per-vertex colors, colors will be assigned from the normals.
 
-<DT>[<b>--aniso</b>]
-<DD> If this flag is enabled and the curvature weight is positive, the metric will be adjusted anisotropically.
+<DT>[<b>--aniso</b> &#60;<i>clamp type</i>&#62;]
+<DD> If specified, this integer value specifies the type of clamping to use for anisotropic filtering. This type of filtering scales the metric tensor along the principal curvature direction as a function of the associated principal curvature value. The three valid values for this parameter are:
+<UL>
+<LI> <B>1</B>: No clamping
+<LI> <B>2</B>: Positive clamping (only scale if the curvature is positive)
+<LI> <B>3</B>: Negative clamping (only scale if the curvature is negative)
+</UL>
 
 <DT>[<b>--verbose</b>]
 <DD> If this flag is enabled, the code will output processing information.
@@ -118,8 +123,8 @@ The default value for this parameter is 10<sup>4</sup>.<br>
 <HR>
 <A NAME="NOTES"><B>NOTES</B></A><br>
 <UL>
-<LI>The code requires a numberical solver and supports either <A HREF="http://eigen.tuxfamily.org">Eigen</A> or <A HREF="http://faculty.cse.tamu.edu/davis/suitesparse.html">CHOLMOD</A>. There are visual studio project files and Makefiles for both. (The code should be easy to interface with Eigen. CHOLMOD promises to be trickier.)<br>
-If you are using Eigen and your implementation is backed by <A HREF="https://software.intel.com/en-us/intel-mkl/">Intel's Math Kernel Library</A> (see discussion <A HREF="https://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html">here</A>), enable the EIGEN_USE_MKL_ALL flag in NormalSmooth.cpp and ShapeGradientDomain.cpp to take advantage of the more efficient solver.
+<LI> The code requires a numberical solver and supports either <A HREF="http://eigen.tuxfamily.org">Eigen</A> or <A HREF="http://faculty.cse.tamu.edu/davis/suitesparse.html">CHOLMOD</A>. There are visual studio project files and Makefiles for both. (The code should be easy to interface with Eigen. CHOLMOD promises to be trickier.)<br>
+If you are using Eigen and your implementation is backed by <A HREF="https://software.intel.com/en-us/intel-mkl/">Intel's Math Kernel Library</A> (see discussion <A HREF="https://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html">here</A>), use the "Eigen.MKL" Makefile/VS project to take advantage of the more efficient solver. (The different versions of the <A HREF="www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/ShapeGradientDomain.x64.zip">Windows executables</A> are similarly compiled with the different solvers.)
 </UL>
 
 <HR>

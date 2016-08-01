@@ -26,14 +26,11 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifdef USE_EIGEN
-// Enable this if you have an MKL-backed Eigen implementation
-#undef EIGEN_USE_MKL_ALL
-#endif // USE_EIGEN
-// Enable this to force testing of array access
-#undef ARRAY_DEBUG
+
 #define FOR_RELEASE
 
+// Enable this to force testing of array access
+#undef ARRAY_DEBUG
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,13 +43,22 @@ DAMAGE.
 #include <Misha/Ply.h>
 #include <Misha/LinearSolvers.h>
 #include <Misha/FEM.h>
+#include <Misha/Histograms.h>
 
+enum
+{
+	ANISOTROPIC_CLAMP_NONE ,
+	ANISOTROPIC_CLAMP_POSITIVE ,
+	ANISOTROPIC_CLAMP_NEGATIVE ,
+	ANISOTROPIC_CLAMP_COUNT
+};
+const char* AnisotropicClampTypes[] = { "no clamp" , "clamp positive" , "clamp negative" };
 cmdLineParameter< char* > In( "in" ) , Out( "out" );
 cmdLineParameter< float > ValueWeight( "vWeight" , 1e4f ) , GradientWeight( "gWeight" , 1.f ) , GradientScale( "gScale" , 1.f );
-cmdLineParameter< float > CurvatureWeight( "kWeight" , 0.f );
-cmdLineReadable UseColors( "useColors" ) , Verbose( "verbose" ) , Anisotropic( "aniso" );
-
-cmdLineReadable* params[] = { &In , &Out , &ValueWeight , &GradientWeight , &GradientScale , &UseColors , &CurvatureWeight , &Anisotropic , &Verbose , NULL };
+cmdLineParameter< float > CurvatureWeight( "kWeight" , 0.f ) , HistogramBounds( "histogram" , 0.f );
+cmdLineParameter< int > Anisotropic( "aniso" , ANISOTROPIC_CLAMP_NONE+1 );
+cmdLineReadable Reciprocal( "reciprocal" ) , UseColors( "useColors" ) , Verbose( "verbose" );
+cmdLineReadable* params[] = { &In , &Out , &ValueWeight , &GradientWeight , &GradientScale , &UseColors , &CurvatureWeight , &HistogramBounds , &Anisotropic , &Reciprocal , &Verbose , NULL };
 
 void ShowUsage( const char* ex )
 {
@@ -62,11 +68,16 @@ void ShowUsage( const char* ex )
 	printf( "\t[--%s <value weight>=%f]\n" , ValueWeight.name , ValueWeight.value );
 #ifndef FOR_RELEASE
 	printf( "\t[--%s <gradient weight>=%f]\n" , GradientWeight.name , GradientWeight.value );
-#endif // FOR_RELEASE
+#endif // !FOR_RELEASE
 	printf( "\t[--%s <gradient scale>=%f]\n" , GradientScale.name , GradientScale.value );
 	printf( "\t[--%s <curvature weight>=%f]\n" , CurvatureWeight.name , CurvatureWeight.value );
+	printf( "\t[--%s <clamp type>=%d]\n" , Anisotropic.name , Anisotropic.value );
+	for( int i=0 ; i<ANISOTROPIC_CLAMP_COUNT ; i++ ) printf( "\t\t%d] %s\n" , i+1 , AnisotropicClampTypes[i] );
+#ifndef FOR_RELEASE
+	printf( "\t[--%s <maximum curvature>]\n" , HistogramBounds.name );
+	printf( "\t[--%s]\n" , Reciprocal.name );
+#endif // !FOR_RELEASE
 	printf( "\t[--%s]\n" , UseColors.name );
-	printf( "\t[--%s]\n" , Anisotropic.name );
 	printf( "\t[--%s]\n" , Verbose.name );
 }
 
@@ -186,6 +197,7 @@ int _main( void )
 		{
 			Timer t;
 			Real s = (Real)( 1. / sqrt(area) );
+			std::vector< Real > curvatureValues;
 #pragma omp parallel for
 			for( int i=0 ; i<triangles.size() ; i++ )
 			{
@@ -196,13 +208,35 @@ int _main( void )
 				// The columns of A_inverse given an orthonormal frame with respect to g.
 				SquareMatrix< Real , 2 > A = FEM::TensorRoot( mesh.g(i) ) , A_inverse = A.inverse() , D , R;
 				// The matrix A_inverse^t * II * A_inverse gives the second fundamental form with respect to a basis that is orthonormal w.r.t. g
+				// The rows of R are the eigenvecctors.
 				SVD( A_inverse.transpose() * II * A_inverse , D , R );
+				if( HistogramBounds.set )
+				{
+#pragma omp critical
+					curvatureValues.push_back( D(0,0) ) , curvatureValues.push_back( D(1,1) );
+				}
 
-				if( Anisotropic.set ) D(0,0) *= D(0,0) , D(1,1) *= D(1,1);
-				else                  D(0,0) = D(1,1) = ( D(0,0) * D(0,0) + D(1,1) * D(1,1) ) / (Real)2.;
-				mesh.g( i ) = A * R.transpose() * ( SquareMatrix< Real , 2 >::Identity() + D * CurvatureWeight.value ) * R * A;
+				if( Anisotropic.set )
+				{
+					switch( Anisotropic.value )
+					{
+					case ANISOTROPIC_CLAMP_NONE+1: D(0,0) *= D(0,0) , D(1,1) *= D(1,1) ; break;
+					case ANISOTROPIC_CLAMP_POSITIVE+1: D(0,0) = ( D(0,0)>0 ) ? D(0,0) * D(0,0) : 0 ; D(1,1) = ( D(1,1)>0 ) ? D(1,1) * D(1,1) : 0 ; break;
+					case ANISOTROPIC_CLAMP_NEGATIVE+1: D(0,0) = ( D(0,0)<0 ) ? D(0,0) * D(0,0) : 0 ; D(1,1) = ( D(1,1)<0 ) ? D(1,1) * D(1,1) : 0 ; break;
+					default: fprintf( stderr , "[ERROR] Unrecognized anisotropy type: %d\n" , Anisotropic.value ) , exit( 0 );
+					}
+				}
+				else D(0,0) = D(1,1) = ( D(0,0) * D(0,0) + D(1,1) * D(1,1) ) / (Real)2.;
+				if( Reciprocal.set ) D(0,0) = (Real)1./D(0,0) , D(1,1) = (Real)1./D(1,1);
+				D = SquareMatrix< Real , 2 >::Identity() + D * CurvatureWeight.value;
+				// Multiplying by A gives the coefficients w.r.t. to an orthonormal basis.
+				// Multiplying by R gives the coefficients w.r.t. to the principal curvature directions.
+				mesh.g( i ) = A.transpose() * R.transpose() * D * R * A;
 			}
 			if( Verbose.set ) printf( "\tUpdated metric: %.2f(s)\n" , t.elapsed() );
+			if( HistogramBounds.set )
+				if( HistogramBounds.value>0 ) Histogram::Print( curvatureValues , 150 , 40 , (Real)-HistogramBounds.value , (Real)HistogramBounds.value );
+				else                          Histogram::Print( curvatureValues , 150 , 40 , true );
 		}
 		// Modify the metric
 		////////////////////
@@ -214,19 +248,28 @@ int _main( void )
 			SparseMatrix< Real , int > mass = mesh.template massMatrix< FEM::BASIS_0_WHITNEY >() * ValueWeight.value;
 			SparseMatrix< Real , int > stiffness = mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY >() * GradientWeight.value;
 
-			Solver solver( mass + stiffness );
+			SparseMatrix< Real , int > M = mass + stiffness;
+			double aTime = Timer::Time();
+			Solver solver( M , false );
+			aTime = Timer::Time() - aTime;
+			double fTime = Timer::Time();
+			solver.update( M );
+			fTime = Timer::Time() - fTime;
 			Pointer( Real ) x = AllocPointer< Real >( vertices.size() );
 			Pointer( Real ) b = AllocPointer< Real >( vertices.size() );
+			double sTime = 0;
 			for( int c=0 ; c<3 ; c++ )
 			{
 				for( int i=0 ; i<vertices.size() ; i++ ) x[i] = signal[i][c];
 				mass.Multiply( x , b );
 				for( int i=0 ; i<vertices.size() ; i++ ) x[i] *= GradientScale.value;
 				stiffness.Multiply( x , b , MULTIPLY_ADD );
+				double _t = Timer::Time();
 				solver.solve( b , x );
+				sTime += Timer::Time()-_t;
 				for( int i=0 ; i<vertices.size() ; i++ ) signal[i][c] = x[i];
 			}
-			if( Verbose.set ) printf( "\tSolved the system: %.2f(s)\n" , t.elapsed() );
+			if( Verbose.set ) printf( "\tSolved the system: %.2f: %.2f + %.2f + %.2f (s)\n" , t.elapsed() , aTime , fTime , sTime );
 		}
 		// Compute and solve the system
 		///////////////////////////////

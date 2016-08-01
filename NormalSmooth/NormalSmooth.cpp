@@ -26,10 +26,6 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifdef USE_EIGEN
-// Enable this if you have an MKL-backed Eigen implementation
-#undef EIGEN_USE_MKL_ALL
-#endif // USE_EIGEN
 // Enable this to force testing of array access
 #undef ARRAY_DEBUG
 #define FOR_RELEASE
