@@ -9,11 +9,11 @@
 </CENTER>
 <HR>
 <A NAME="LINKS"><B>LINKS</B></A><br>
-<A href="http://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009 Paper</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016 Paper</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/JCGT16.pdf">JCGT 2016 Paper</A><br>
-<A HREF="../ShapeGradientDomain.x64.zip">Windows (x64) Executables</A><BR>
-<A href="../ShapeGradientDomain.zip">Source Code</A><br> <A HREF="https://github.com/mkazhdan/ShapeGradientDomain">GitHub Repository</A><BR>
+<A href="https://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009 Paper</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016 Paper</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/JCGT16.pdf">JCGT 2016 Paper</A><br>
+<A HREF="https://www.cs.jhu.edu/~misha/ShapeGradientDomain/ShapeGradientDomain.x64.zip">Windows (x64) Executables</A><BR>
+<A href="https://www.cs.jhu.edu/~misha/ShapeGradientDomain/ShapeGradientDomain.zip">Source Code</A><br> <A HREF="https://github.com/mkazhdan/ShapeGradientDomain">GitHub Repository</A><BR>
 (Older Versions:
-<A href="../Version1.0/">V1.0</A>)
+<A href="https://www.cs.jhu.edu/~misha/ShapeGradientDomain/Version1.0/">V1.0</A>)
 <br>
 
 
@@ -22,7 +22,7 @@
 The code is comprised of two executables.
 <UL>
 <P>
-<LI> <B><U>ShapeGradientDomain</U></B>: [<A href="http://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009</A>]<P>
+<LI> <B><U>ShapeGradientDomain</U></B>: [<A href="https://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009</A>]<P>
 This code performs gradient domain processing on signals defined on a mesh, where the signal can be either a color-field represented as a color per vertex or is the position of the vertices themselves..
 The code supports both sharpening and smoothing of the signals through the solution of a screened-Poisson equation.
 Specifically, given an input signal <I>F</I>, it solves for the signal <I>G</I> minimizing:<BR>
@@ -34,7 +34,7 @@ The code supports inhomogenous processing by allowing the user to replace the Ri
 <CENTER> Id. + &epsilon;&sdot;&Kappa;<sup>2</sup></CENTER>
 where Id. is the identity matrix and &Kappa;<sup>2</sup> is the diagonal matrix whose entries are the squares of the principal curature values and &epsilon; is the curvature weight.<br>
 Curvatures are estimated using the surface normals. If none are provided, the vertex normals are estimated as the area-weighted sum of adjacent triangle normals.
-<LI> <B><U>Normal Smooth</U></B>: [<A href="http://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016</A>]<P>
+<LI> <B><U>Normal Smooth</U></B>: [<A href="https://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016</A>]<P>
 This code performs multiple iterations of harmonic smoothing of the surface normals. As with the code above, this amounts to minimizing:<br>
 <CENTER>
 <I>E</I>(<I>G</I>) = ||<I>F</I>-<I>G</I>||<sup>2</sup> + &gamma;&sdot;||&nabla;<I>G</I>||<sup>2</sup>
@@ -55,14 +55,14 @@ Note that when &beta; is set to zero the two executables differ in that the firs
 <SUMMARY>
 <font size="+1"><b>ShapeGradientDomain</b></font>:
 Processes either the vertex positions, or per-vertex colors, performing isotropic/anisotropic gradient-domain smoothing and sharpening
-[<A href="http://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/JCGT16.pdf">JCGT 2016</A>]
+[<A href="https://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/JCGT16.pdf">JCGT 2016</A>]
 </SUMMARY>
 
 <DT><b>--in</b> &#60;<i>input geometry</i>&#62;
-<DD> This string specifies the name of the input geometry, represented in <A HREF="http://www.cc.gatech.edu/projects/large_models/ply.html">PLY</A> format.
+<DD> This string specifies the name of the input geometry, represented in <A HREF="https://www.cc.gatech.edu/projects/large_models/ply.html">PLY</A> format.
 
 <DT>[<b>--out</b> &#60;<i>ouput geometry</i>&#62;]
-<DD> This string specifies the name of the output geometry, represented in <A HREF="http://www.cc.gatech.edu/projects/large_models/ply.html">PLY</A> format.
+<DD> This string specifies the name of the output geometry, represented in <A HREF="https://www.cc.gatech.edu/projects/large_models/ply.html">PLY</A> format.
 
 <DT>[<b>--vWeight</b> &#60;<i>value interpolation weight</i>&#62;]
 <DD> This floating point value gives the weight for value interpolation (&alpha;).<BR>
@@ -103,10 +103,10 @@ Diffuses surface normals, restricting the change to be within the tangent plane 
 
 
 <DT><b>--in</b> &#60;<i>input geometry</i>&#62;
-<DD> This string specifies the name of the input geometry, represented in <A HREF="http://www.cc.gatech.edu/projects/large_models/ply.html">PLY</A> format.
+<DD> This string specifies the name of the input geometry, represented in <A HREF="https://www.cc.gatech.edu/projects/large_models/ply.html">PLY</A> format.
 
 <DT>[<b>--out</b> &#60;<i>ouput geometry</i>&#62;]
-<DD> This string specifies the name of the output geometry, represented in <A HREF="http://www.cc.gatech.edu/projects/large_models/ply.html">PLY</A> format.
+<DD> This string specifies the name of the output geometry, represented in <A HREF="https://www.cc.gatech.edu/projects/large_models/ply.html">PLY</A> format.
 
 <DT>[<b>--iters</b> &#60;<i>iterations</i>&#62;]
 <DD> This integer value specifies the number of smoothing iterations that are to be performed..<BR>
@@ -127,7 +127,7 @@ The default value for this parameter is 10<sup>-4</sup>.<br>
 <HR>
 <A NAME="NOTES"><B>NOTES</B></A><br>
 <UL>
-<LI> The code requires <A HREF="http://eigen.tuxfamily.org">Eigen</A> as a numerical solver.<BR>
+<LI> The code requires <A HREF="https://eigen.tuxfamily.org">Eigen</A> as a numerical solver.<BR>
 If you are using Eigen and your implementation is backed by <A HREF="https://software.intel.com/en-us/intel-mkl/">Intel's Math Kernel Library</A> (see discussion <A HREF="https://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html">here</A>), enable the <CODE>EIGEN_USE_MKL_ALL</CODE> macro by defining it in the file <CODE>PreProcessor.h</CODE>. (The different versions of the <A HREF="www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/ShapeGradientDomain.x64.zip">Windows executables</A> are similarly compiled with the different solvers.)
 </UL>
 
