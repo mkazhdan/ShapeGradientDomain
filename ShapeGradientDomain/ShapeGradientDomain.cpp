@@ -39,33 +39,18 @@ DAMAGE.
 #include <Misha/Algebra.h>
 #include <Misha/Ply.h>
 #include <Misha/PlyVertexData.h>
-#ifdef NEW_CODE
 #include <Eigen/Sparse>
 #ifdef EIGEN_USE_MKL_ALL
 #include <Eigen/PardisoSupport>
 #endif // EIGEN_USE_MKL_ALL
-#else // !NEW_CODE
-#include <Misha/LinearSolvers.h>
-#endif // NEW_CODE
 #include <Misha/FEM.h>
-#include <Misha/Histograms.h>
 #include <Misha/MultiThreading.h>
 
-enum
-{
-	ANISOTROPIC_CLAMP_NONE ,
-	ANISOTROPIC_CLAMP_POSITIVE ,
-	ANISOTROPIC_CLAMP_NEGATIVE ,
-	ANISOTROPIC_CLAMP_COUNT
-};
-
-const char* AnisotropicClampTypes[] = { "no clamp" , "clamp positive" , "clamp negative" };
 Misha::CmdLineParameter< std::string > In( "in" ) , Out( "out" );
-Misha::CmdLineParameter< float > ValueWeight( "vWeight" , 1e4f ) , GradientWeight( "gWeight" , 1.f ) , GradientScale( "gScale" , 1.f );
-Misha::CmdLineParameter< float > CurvatureWeight( "kWeight" , 0.f ) , HistogramBounds( "histogram" , 0.f );
-Misha::CmdLineParameter< int > Anisotropic( "aniso" , ANISOTROPIC_CLAMP_NONE+1 );
-Misha::CmdLineReadable Reciprocal( "reciprocal" ) , UseColors( "useColors" ) , Verbose( "verbose" );
-Misha::CmdLineReadable* params[] = { &In , &Out , &ValueWeight , &GradientWeight , &GradientScale , &UseColors , &CurvatureWeight , &HistogramBounds , &Anisotropic , &Reciprocal , &Verbose , NULL };
+Misha::CmdLineParameter< float > ValueWeight( "vWeight" , 1.f ) , GradientWeight( "gWeight" , 1e-4f ) , GradientScale( "gScale" , 1.f );
+Misha::CmdLineParameter< float > CurvatureWeight( "kWeight" , 0.f );
+Misha::CmdLineReadable Anisotropic( "anisotropic" ) , UseColors( "useColors" ) , Verbose( "verbose" );
+Misha::CmdLineReadable* params[] = { &In , &Out , &ValueWeight , &GradientWeight , &GradientScale , &Anisotropic , &UseColors , &CurvatureWeight , &Verbose , NULL };
 
 void ShowUsage( const char* ex )
 {
@@ -73,33 +58,23 @@ void ShowUsage( const char* ex )
 	printf( "\t --%s <input geometry>\n" , In.name.c_str() );
 	printf( "\t[--%s <output geometry>]\n" , Out.name.c_str() );
 	printf( "\t[--%s <value weight>=%f]\n" , ValueWeight.name.c_str() , ValueWeight.value );
-#ifndef FOR_RELEASE
-	printf( "\t[--%s <gradient weight>=%f]\n" , GradientWeight.name , GradientWeight.value );
-#endif // !FOR_RELEASE
+	printf( "\t[--%s <gradient weight>=%f]\n" , GradientWeight.name.c_str() , GradientWeight.value );
 	printf( "\t[--%s <gradient scale>=%f]\n" , GradientScale.name.c_str() , GradientScale.value );
 	printf( "\t[--%s <curvature weight>=%f]\n" , CurvatureWeight.name.c_str() , CurvatureWeight.value );
-	printf( "\t[--%s <clamp type>=%d]\n" , Anisotropic.name.c_str() , Anisotropic.value );
-	for( int i=0 ; i<ANISOTROPIC_CLAMP_COUNT ; i++ ) printf( "\t\t%d] %s\n" , i+1 , AnisotropicClampTypes[i] );
-#ifndef FOR_RELEASE
-	printf( "\t[--%s <maximum curvature>]\n" , HistogramBounds.name.c_str() );
-	printf( "\t[--%s]\n" , Reciprocal.name.c_str() );
-#endif // !FOR_RELEASE
+	printf( "\t[--%s]\n" , Anisotropic.name.c_str() );
 	printf( "\t[--%s]\n" , UseColors.name.c_str() );
 	printf( "\t[--%s]\n" , Verbose.name.c_str() );
 }
 
-#ifdef NEW_CODE
 #ifdef EIGEN_USE_MKL_ALL
 using Solver = Eigen::PardisoLLT< Eigen::SparseMatrix< double , Eigen::ColMajor , __int64 > >;
 #else // !EIGEN_USE_MKL_ALL
 using Solver = Eigen::SimplicialLLT< Eigen::SparseMatrix< double > >;
 #endif // EIGEN_USE_MKL_ALL
-#endif // NEW_CODE
 
 template< class Real > Real Clamp( Real v , Real min , Real max ){ return std::min< Real >( max , std::max< Real >( min , v ) ); }
 template< class Real > Point3D< Real > ClampColor( Point3D< Real > c ){ return Point3D< Real >( Clamp( c[0] , (Real)0 , (Real)255 ) , Clamp( c[1] , (Real)0 , (Real)255 ) , Clamp( c[2] , (Real)0 , (Real)255 ) ); }
 
-#ifdef NEW_CODE
 template< typename Real >
 Eigen::SparseMatrix< Real > ToEigen( const SparseMatrix< Real , int > & M )
 {
@@ -111,7 +86,6 @@ Eigen::SparseMatrix< Real > ToEigen( const SparseMatrix< Real , int > & M )
 	_M.setFromTriplets( triplets.begin() , triplets.end() );
 	return _M;
 }
-#endif // NEW_CODE
 
 // Compute the SVD factorization of a _SYMMETRIC_ matrix M as M = R^t * D * R
 template< class Real > void SVD( const SquareMatrix< Real , 2 >& M , SquareMatrix< Real , 2 >& D , SquareMatrix< Real , 2 >& R )
@@ -166,11 +140,6 @@ int _main( void )
 	using Factory = VertexFactory::Factory< float , VertexFactory::PositionFactory< float , 3 > , VertexFactory::NormalFactory< float , 3 > , VertexFactory::RGBColorFactory< float > >;
 	using Vertex = typename Factory::VertexType;
 
-#ifdef NEW_CODE
-#else // !NEW_CODE
-	typedef EigenSolverCholeskyLLt< Real , typename SparseMatrix< Real , int >::RowIterator > Solver;
-#endif // NEW_CODE
-
 	std::vector< TriangleIndex > triangles;
 	std::vector< Vertex > vertices;
 
@@ -203,7 +172,7 @@ int _main( void )
 	}
 	// Read in the data //
 	//////////////////////
-	
+
 	std::vector< Point3D< Real > > signal( vertices.size() );
 
 	//////////////////
@@ -233,48 +202,30 @@ int _main( void )
 
 			std::mutex mut;
 			ThreadPool::ParallelFor
-				(
-					0 , triangles.size() ,
-					[&]( unsigned int , size_t i )
-					{
-						Point3D< Real > v[] = { Point3D< Real >( vertices[ triangles[i][0] ].template get<0>() ) * s , Point3D< Real >( vertices[ triangles[i][1] ].template get<0>() ) * s , Point3D< Real >( vertices[ triangles[i][2] ].template get<0>() ) * s };
-						Point3D< Real > n[] = { Point3D< Real >( vertices[ triangles[i][0] ].template get<1>() )     , Point3D< Real >( vertices[ triangles[i][1] ].template get<1>() )     , Point3D< Real >( vertices[ triangles[i][2] ].template get<1>() )     };
-						SquareMatrix< Real , 2 > II = SecondFundamentalForm( v , n );
+			(
+				0 , triangles.size() ,
+				[&]( unsigned int , size_t i )
+				{
+					Point3D< Real > v[] = { Point3D< Real >( vertices[ triangles[i][0] ].template get<0>() ) * s , Point3D< Real >( vertices[ triangles[i][1] ].template get<0>() ) * s , Point3D< Real >( vertices[ triangles[i][2] ].template get<0>() ) * s };
+					Point3D< Real > n[] = { Point3D< Real >( vertices[ triangles[i][0] ].template get<1>() )     , Point3D< Real >( vertices[ triangles[i][1] ].template get<1>() )     , Point3D< Real >( vertices[ triangles[i][2] ].template get<1>() )     };
+					SquareMatrix< Real , 2 > II = SecondFundamentalForm( v , n );
 
-						// The columns of A_inverse given an orthonormal frame with respect to g.
-						SquareMatrix< Real , 2 > A = FEM::TensorRoot( mesh.g(i) ) , A_inverse = A.inverse() , D , R;
-						// The matrix A_inverse^t * II * A_inverse gives the second fundamental form with respect to a basis that is orthonormal w.r.t. g
-						// The rows of R are the eigenvecctors.
-						SVD( A_inverse.transpose() * II * A_inverse , D , R );
-						if( HistogramBounds.set )
-						{
-							std::lock_guard< std::mutex > guard( mut );
-							curvatureValues.push_back( D(0,0) ) , curvatureValues.push_back( D(1,1) );
-						}
-
-						if( Anisotropic.set )
-						{
-							switch( Anisotropic.value )
-							{
-							case ANISOTROPIC_CLAMP_NONE+1: D(0,0) *= D(0,0) , D(1,1) *= D(1,1) ; break;
-							case ANISOTROPIC_CLAMP_POSITIVE+1: D(0,0) = ( D(0,0)>0 ) ? D(0,0) * D(0,0) : 0 ; D(1,1) = ( D(1,1)>0 ) ? D(1,1) * D(1,1) : 0 ; break;
-							case ANISOTROPIC_CLAMP_NEGATIVE+1: D(0,0) = ( D(0,0)<0 ) ? D(0,0) * D(0,0) : 0 ; D(1,1) = ( D(1,1)<0 ) ? D(1,1) * D(1,1) : 0 ; break;
-							default: fprintf( stderr , "[ERROR] Unrecognized anisotropy type: %d\n" , Anisotropic.value ) , exit( 0 );
-							}
-						}
-						else D(0,0) = D(1,1) = ( D(0,0) * D(0,0) + D(1,1) * D(1,1) ) / (Real)2.;
-						if( Reciprocal.set ) D(0,0) = (Real)1./D(0,0) , D(1,1) = (Real)1./D(1,1);
-						D = SquareMatrix< Real , 2 >::Identity() + D * CurvatureWeight.value;
-						// Multiplying by A gives the coefficients w.r.t. to an orthonormal basis.
-						// Multiplying by R gives the coefficients w.r.t. to the principal curvature directions.
-						mesh.g( i ) = A.transpose() * R.transpose() * D * R * A;
-					}
-				);
+					// The columns of A_inverse given an orthonormal frame with respect to g.
+					SquareMatrix< Real , 2 > A = FEM::TensorRoot( mesh.g(i) ) , A_inverse = A.inverse() , D , R;
+					// The matrix A_inverse^t * II * A_inverse gives the second fundamental form with respect to a basis that is orthonormal w.r.t. g
+					// The rows of R are the eigenvecctors.
+					SVD( A_inverse.transpose() * II * A_inverse , D , R );
+					D(0,0) *= D(0,0);
+					D(1,1) *= D(1,1);
+					if( !Anisotropic.set ) D(0,0) = D(1,1) = ( D(0,0) + D(1,1) ) / (Real)2.;
+					D = SquareMatrix< Real , 2 >::Identity() + D * CurvatureWeight.value;
+					// Multiplying by A gives the coefficients w.r.t. to an orthonormal basis.
+					// Multiplying by R gives the coefficients w.r.t. to the principal curvature directions.
+					mesh.g( i ) = A.transpose() * R.transpose() * D * R * A;
+				}
+			);
 
 			if( Verbose.set ) std::cout << "\tUpdated metric: " << timer() << std::endl;
-			if( HistogramBounds.set )
-				if( HistogramBounds.value>0 ) Histogram::Print( curvatureValues , 150 , 40 , (Real)-HistogramBounds.value , (Real)HistogramBounds.value );
-				else                          Histogram::Print( curvatureValues , 150 , 40 , true );
 		}
 		// Modify the metric
 		////////////////////
@@ -284,7 +235,6 @@ int _main( void )
 		{
 			Miscellany::Timer timer;
 
-#ifdef NEW_CODE
 			Eigen::SparseMatrix< Real > mass = ToEigen( mesh.template massMatrix< FEM::BASIS_0_WHITNEY >() * ValueWeight.value );
 			Eigen::SparseMatrix< Real > stiffness = ToEigen( mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY >() * GradientWeight.value );
 
@@ -308,32 +258,6 @@ int _main( void )
 				sTime += timer.elapsed()-t;
 				for( int i=0 ; i<vertices.size() ; i++ ) signal[i][c] = x[i];
 			}
-#else // !NEW_CODE
-			SparseMatrix< Real , int > mass = mesh.template massMatrix< FEM::BASIS_0_WHITNEY >() * ValueWeight.value;
-			SparseMatrix< Real , int > stiffness = mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY >() * GradientWeight.value;
-
-			SparseMatrix< Real , int > M = mass + stiffness;
-			double aTime = timer.elapsed();
-			Solver solver( M , false );
-			aTime = timer.elapsed() - aTime;
-			double fTime = timer.elapsed();
-			solver.update( M );
-			fTime = timer.elapsed() - fTime;
-			Pointer( Real ) x = AllocPointer< Real >( vertices.size() );
-			Pointer( Real ) b = AllocPointer< Real >( vertices.size() );
-			double sTime = 0;
-			for( int c=0 ; c<3 ; c++ )
-			{
-				for( int i=0 ; i<vertices.size() ; i++ ) x[i] = signal[i][c];
-				mass.Multiply( x , b );
-				for( int i=0 ; i<vertices.size() ; i++ ) x[i] *= GradientScale.value;
-				stiffness.Multiply( x , b , MULTIPLY_ADD );
-				double t = timer.elapsed();
-				solver.solve( b , x );
-				sTime += timer.elapsed()-t;
-				for( int i=0 ; i<vertices.size() ; i++ ) signal[i][c] = x[i];
-			}
-#endif // NEW_CODE
 			if( Verbose.set ) std::cout << "\tSolved the system: " << timer() << ": " << aTime << " + " << fTime << " + " << sTime << std::endl;
 		}
 		// Compute and solve the system
