@@ -10,8 +10,8 @@
 <HR>
 <A NAME="LINKS"><B>LINKS</B></A><br>
 <A href="https://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009 Paper</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016 Paper</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/JCGT16.pdf">JCGT 2016 Paper</A><br>
-<A HREF="https://www.cs.jhu.edu/~misha/ShapeGradientDomain/ShapeGradientDomain.x64.zip">Windows (x64) Executables</A><BR>
-<A href="https://www.cs.jhu.edu/~misha/ShapeGradientDomain/ShapeGradientDomain.zip">Source Code</A><br> <A HREF="https://github.com/mkazhdan/ShapeGradientDomain">GitHub Repository</A><BR>
+<A HREF="https://www.cs.jhu.edu/~misha/ShapeGradientDomain/Version2.0/ShapeGradientDomain.x64.zip">Windows (x64) Executables</A><BR>
+<A href="https://www.cs.jhu.edu/~misha/ShapeGradientDomain/Version2.0/ShapeGradientDomain.zip">Source Code</A><br> <A HREF="https://github.com/mkazhdan/ShapeGradientDomain">GitHub Repository</A><BR>
 (Older Versions:
 <A href="https://www.cs.jhu.edu/~misha/ShapeGradientDomain/Version1.0/">V1.0</A>)
 <br>
@@ -128,7 +128,7 @@ The default value for this parameter is 10<sup>-4</sup>.<br>
 <A NAME="NOTES"><B>NOTES</B></A><br>
 <UL>
 <LI> The code requires <A HREF="https://eigen.tuxfamily.org">Eigen</A> as a numerical solver.<BR>
-If you are using Eigen and your implementation is backed by <A HREF="https://software.intel.com/en-us/intel-mkl/">Intel's Math Kernel Library</A> (see discussion <A HREF="https://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html">here</A>), enable the <CODE>EIGEN_USE_MKL_ALL</CODE> macro by defining it in the file <CODE>PreProcessor.h</CODE>. (The different versions of the <A HREF="www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/ShapeGradientDomain.x64.zip">Windows executables</A> are similarly compiled with the different solvers.)
+If you are using Eigen and your implementation is backed by <A HREF="https://software.intel.com/en-us/intel-mkl/">Intel's Math Kernel Library</A> (see discussion <A HREF="https://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html">here</A>), enable the <CODE>EIGEN_USE_MKL_ALL</CODE> macro by defining it in the file <CODE>PreProcessor.h</CODE>. (The two versions of the <A HREF="https://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/Version2.0/ShapeGradientDomain.x64.zip">Windows executables</A> are similarly compiled with and without MKL support.)
 </UL>
 
 <HR>
