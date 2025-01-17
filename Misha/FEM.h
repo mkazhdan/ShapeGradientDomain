@@ -29,11 +29,27 @@ DAMAGE.
 #ifndef FEM_INCLUDED
 #define FEM_INCLUDED
 
+#define NEW_FEM
+#define NEW_FEM_CODE
+
+#undef INCLUDE_EXTRA_FEM
+
+#include <math.h>
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
+#include <atomic>
+
+#include "SparseMatrix.h"
 #include <string.h>
 #include <algorithm>
-#include "SparseMatrix.h"
+#include <functional>
+#include <mutex>
 #include "Geometry.h"
 #include "Array.h"
+#include "Polynomial.h"
+#include "MultiThreading.h"
+#include "Atomic.h"
 
 
 /************ Notes ****************
@@ -83,15 +99,16 @@ namespace FEM
 	enum
 	{
 		BASIS_0_WHITNEY ,				// 0-form represented as the linear combination of hat functions (1 value per vertices)
-		BASIS_1_CONFORMING ,			// 1-form represented as the linear combination of gradients and 90-degree rotated gradients of hat functions (2 values per vertex)
+		BASIS_1_CONFORMING ,			// 1-form represented as the linear combination of differentials and 90-degree rotated differentials of hat functions (2 values per vertex)
 		BASIS_1_WHITNEY ,				// 1-form represented as the linear combination of the Whitney 1-form basis functions (1 value per edge)
 		BASIS_1_TRIANGLE_CONSTANT ,		// 1-form represented as piecewise (per triangle) constant cotangent vectors (2 values per triangle)
-		BASIS_2_WHITNEY ,				// 2-form represented as the linear combination of the Whitney  2-form basis functions (1 value per triangle)
+		BASIS_2_WHITNEY ,				// 2-form represented as the linear combination of the Whitney 2-form basis functions (1 value per triangle)
 		BASIS_2_VERTEX_CONSTANT ,		// 2-form represented as piecewise (around vertex) constant density fields (1 value per vertex)
 		BASIS_COUNT
 	};
 
 	static const char* BasisNames[] = { "scalar whitney" , "vector conforming" , "vector whitney" , "vector triangle constant" , "density whitney" , "density vertex constant" };
+	static const unsigned int BasisDegree[] = { 1 , 0 , 1 , 0 , 1 , 0 };
 	template< unsigned int Type > struct BasisInfo
 	{
 		static const unsigned int CoefficientsPerElement;
@@ -104,14 +121,14 @@ namespace FEM
 #include "FEM.BasisInfo.h"
 	template< class Real , unsigned int Type > struct BasisInfoSystem
 	{
-		typedef SquareMatrix<          Real , BasisInfo< Type >::Coefficients >     Matrix;
-		typedef SquareMatrix< unsigned char , BasisInfo< Type >::Coefficients > MaskMatrix;
-		typedef Point       <          Real , BasisInfo< Type >::Coefficients >      Point;
+		typedef ::SquareMatrix<          Real , BasisInfo< Type >::Coefficients >     Matrix;
+		typedef ::SquareMatrix< unsigned char , BasisInfo< Type >::Coefficients > MaskMatrix;
+		typedef ::Point       <          Real , BasisInfo< Type >::Coefficients >      Point;
 	};
 	template< class Real , unsigned int InType , unsigned int OutType > struct BasisInfoSystem2
 	{
-		typedef Matrix< unsigned char , BasisInfo< InType >::Coefficients , BasisInfo< OutType >::Coefficients > MaskMatrix;
-		typedef Matrix<          Real , BasisInfo< InType >::Coefficients , BasisInfo< OutType >::Coefficients >     Matrix;
+		typedef ::Matrix< unsigned char , BasisInfo< InType >::Coefficients , BasisInfo< OutType >::Coefficients > MaskMatrix;
+		typedef ::Matrix<          Real , BasisInfo< InType >::Coefficients , BasisInfo< OutType >::Coefficients >     Matrix;
 	};
 
 	static void TestBasisType( unsigned int BasisType , const char* header , bool forceFailure )
@@ -137,13 +154,23 @@ namespace FEM
 		Point2DWrapper( const Point2D< Real >& v ) : Point2D< Real >( v ) {;}
 		Point2DWrapper  operator +  ( const Point2DWrapper& v ) const { return Point2D< Real >::operator + ( v ); }
 		Point2DWrapper  operator -  ( const Point2DWrapper& v ) const { return Point2D< Real >::operator - ( v ); }
+#if 0
 		Point2DWrapper& operator += ( const Point2DWrapper& v )       { Point2D< Real >::operator += ( v ) ; return *this; }
 		Point2DWrapper& operator -= ( const Point2DWrapper& v )       { Point2D< Real >::operator -= ( v ) ; return *this; }
-		Point2DWrapper  operator *  ( Real s ) const { return Point2D< Real >::operator * ( s ); }
-		Point2DWrapper  operator /  ( Real s ) const { return Point2D< Real >::operator / ( s ); }
+		Point2DWrapper  operator *  ( Real s ) const { return (Point2D< Real >)(*this) * ( s ); }
+		Point2DWrapper  operator /  ( Real s ) const { return (Point2D< Real >)(*this) / ( s ); }
 		Point2DWrapper& operator *= ( Real s )       { Point2D< Real >::operator *= ( s ) ; return *this; }
 		Point2DWrapper& operator /= ( Real s )       { Point2D< Real >::operator /= ( s ) ; return *this; }
 		Point2DWrapper  operator -  ( void ) const { return Point2D< Real >::operator - ( ); }
+#else
+		Point2DWrapper& operator += ( const Point2DWrapper& v )       { static_cast< Point2D< Real > & >( *this ) += static_cast< const Point2D< Real > & >( v ) ; return *this; }
+		Point2DWrapper& operator -= ( const Point2DWrapper& v )       { static_cast< Point2D< Real > & >( *this ) -= static_cast< const Point2D< Real > & >( v ) ; return *this; }
+		Point2DWrapper  operator *  ( Real s ) const { return static_cast< const Point2D< Real > & >( *this ) * s; }
+		Point2DWrapper  operator /  ( Real s ) const { return static_cast< const Point2D< Real > & >( *this ) / s; }
+		Point2DWrapper& operator *= ( Real s )       { static_cast< Point2D< Real > & >( *this ) *= s ; return *this; }
+		Point2DWrapper& operator /= ( Real s )       { static_cast< Point2D< Real > & >( *this ) /= s ; return *this; }
+		Point2DWrapper  operator -  ( void ) const { return - static_cast< const Point2D< Real > & >( *this ); }
+#endif
 	};
 	template< class Real > using   TangentVector = Point2DWrapper< Real , VECTOR_PRIMAL >;
 	template< class Real > using CotangentVector = Point2DWrapper< Real , VECTOR_DUAL   >;
@@ -173,6 +200,7 @@ namespace FEM
 	// Compute a symmetric square root of the metric tensor
 	template< class Real > SquareMatrix< Real , 2 > TensorRoot( const SquareMatrix< Real , 2 >& tensor );
 
+
 	///////////////////////////////////////////
 	// Right Triangle (with a metric tensor) //
 	///////////////////////////////////////////
@@ -195,15 +223,54 @@ namespace FEM
 		// The edges are ordered so that the i-th edge is opposite the i-th vertex (w/ ccw orientation)
 		static const Point2D< Real > Corners[];
 		static const Point2D< Real > EdgeMidpoints[];
-		static const CotangentVector< Real > CornerGradients[];
+		static const CotangentVector< Real > CornerDifferentials[];
 		static const   TangentVector< Real > EdgeDirections[];
+
+		template< unsigned int Degree > struct          ScalarField;
+		template< unsigned int Degree > struct CotangentVectorField;
+		template< unsigned int Degree > struct   TangentVectorField;
+
+		template< unsigned int Degree >
+		struct ScalarField : public Polynomial::Polynomial< 2 , Degree , Real >
+		{
+			using Polynomial::Polynomial< 2 , Degree , Real >::d;
+
+			CotangentVectorField< Degree-1 > differential( void ) const;
+		};
+
+		template< unsigned int Degree >
+		struct TangentVectorField : public VectorSpace< Real , TangentVectorField< Degree > > , public std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >
+		{
+			using std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >::first;
+			using std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >::second;
+
+			TangentVectorField( void ){}
+			TangentVectorField( const std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > > &v ){ first = v.first , second = v.second; }
+
+			void Add( const TangentVectorField &v ){ first += v.first , second += v.second; }
+			void Scale( Real s ){ first *= s , second *= s; }
+		};
+
+		template< unsigned int Degree >
+		struct CotangentVectorField : public VectorSpace< Real , CotangentVectorField< Degree > > , public std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >
+		{
+			using std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >::first;
+			using std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >::second;
+
+			CotangentVectorField( void ){}
+			CotangentVectorField( const std::pair< Polynomial::Polynomial< 2 , Degree , double > , Polynomial::Polynomial< 2 , Degree , double > > &v ){ first = v.first , second = v.second; }
+
+			void Add( const CotangentVectorField &v ){ first += v.first , second += v.second; }
+			void Scale( Real s ){ first *= s , second *= s; }
+		};
 
 		// Evaluate the scalar/vector/density fields represented by the coefficients.
 		// Note that the tensor is required for the conforming basis to define the 90-degree rotation and for the 2-forms to remove the volume
-		template< unsigned int BasisType , class V > static V                    EvaluateScalarField        (                                          ConstPointer( V ) coefficients , const Point2D< Real >& position );
-		template< unsigned int BasisType , class V > static CotangentVector< V > EvaluateScalarFieldGradient(                                          ConstPointer( V ) coefficients , const Point2D< Real >& position );
-		template< unsigned int BasisType , class V > static CotangentVector< V > EvaluateCovectorField      ( const SquareMatrix< Real , 2 >& tensor , ConstPointer( V ) coefficients , const Point2D< Real >& position );
-		template< unsigned int BasisType , class V > static V                    EvaluateDensityField       ( const SquareMatrix< Real , 2 >& tensor , ConstPointer( V ) coefficients , const Point2D< Real >& position );
+		template< unsigned int BasisType , class V > static V                    EvaluateScalarField            (                                          ConstPointer( V ) coefficients , const Point2D< Real >& position );
+		template< unsigned int BasisType , class V > static CotangentVector< V > EvaluateScalarFieldDifferential(                                          ConstPointer( V ) coefficients , const Point2D< Real >& position );
+		template< unsigned int BasisType , class V > static   TangentVector< V > EvaluateScalarFieldGradient    ( const SquareMatrix< Real , 2 >& tensor , ConstPointer( V ) coefficients , const Point2D< Real >& position );
+		template< unsigned int BasisType , class V > static CotangentVector< V > EvaluateCovectorField          ( const SquareMatrix< Real , 2 >& tensor , ConstPointer( V ) coefficients , const Point2D< Real >& position );
+		template< unsigned int BasisType , class V > static V                    EvaluateDensityField           ( const SquareMatrix< Real , 2 >& tensor , ConstPointer( V ) coefficients , const Point2D< Real >& position );
 
 		// Compute the (possibly lumped/weighted) mass matrix
 		template< unsigned int BasisType > static typename BasisInfoSystem< Real , BasisType >::Matrix        GetMassMatrix( const SquareMatrix< Real , 2 >& tensor );
@@ -219,6 +286,10 @@ namespace FEM
 
 		// Compute the integrals
 		template< unsigned int BasisType > static Real Integrate( const SquareMatrix< Real , 2 >& tensor , ConstPointer( Real ) linear );
+
+		template< unsigned int Degree >
+		static Real Integrate( const SquareMatrix< Real , 2 > &tensor , const Polynomial::Polynomial< 2 , Degree , Real > &p );
+
 		template< unsigned int BasisType > static typename BasisInfoSystem< Real , BasisType >::Point IntegrationDual( const SquareMatrix< Real , 2 >& tensor , ConstPointer( Real ) linear );
 		template< unsigned int BasisType > static typename BasisInfoSystem< Real , BasisType >::Point IntegrationDual( const SquareMatrix< Real , 2 >& tensor , ConstPointer( CotangentVector< Real > ) linear );
 		template< unsigned int BasisType > static typename BasisInfoSystem< Real , BasisType >::Point IntegrationDual( const SquareMatrix< Real , 2 >& tensor , Point2D< Real > p , Point2D< Real > q );
@@ -272,6 +343,7 @@ namespace FEM
 	// An abstract class that can be sampled at a point on the mesh and returns a tangent vector
 	template< class Real >
 	struct TangentVectorField{ virtual TangentVector< Real > operator() ( const SamplePoint< Real >& p ) const = 0; };
+
 	// A realization of the abstract class by a vector field that is constant per triangle.
 	template< class Real >
 	struct SampledTangentVectorField : public TangentVectorField< Real >
@@ -291,7 +363,8 @@ namespace FEM
 	//    (Or -1 if the he is on the boundary.)
 	struct EdgeMap
 	{
-		EdgeMap( ConstPointer( TriangleIndex ) triangles , size_t tCount );
+		template< typename Index >
+		EdgeMap( ConstPointer( SimplexIndex< 2 , Index > ) triangles , size_t tCount );
 		~EdgeMap( void ){ FreePointer( _e2he ) ; FreePointer( _he2e ); }
 		size_t size( void ) const { return _eCount; }
 		// Given an edge index, this returns a pointer to the two half-edges adjacent on that edge. (The first is positively aligned with the edge.)
@@ -305,35 +378,51 @@ namespace FEM
 		size_t _eCount;
 		Pointer( int ) _e2he;
 		Pointer( int ) _he2e;
-		template< typename Real > friend struct RiemannianMesh;
+		template< typename Real , typename Index > friend struct RiemannianMesh;
 	};
+
 	// This structure represents a Riemmanian mesh, with the triangles giving the connectivity and the square (symmetric) matrices giving the metric
-	template< class Real >
+	template< class Real , typename Index=int >
 	struct RiemannianMesh
 	{
+		using TriIndex = SimplexIndex< 2 , Index >;
 	protected:
-		Pointer( TriangleIndex ) _triangles;
+		Pointer( TriIndex ) _triangles;
 		Pointer( SquareMatrix< Real , 2 > ) _g;
 		size_t _tCount , _vCount;
 		EdgeMap _edgeMap;
 	public:
-		ConstPointer( TriangleIndex ) triangles( void     ) const { return _triangles   ; }
-		const        TriangleIndex&   triangles( size_t t ) const { return _triangles[t]; }
+		ConstPointer( TriIndex ) triangles( void     ) const { return _triangles   ; }
+		const         TriIndex&  triangles( size_t t ) const { return _triangles[t]; }
+#if 1
+		int edge( int he , bool& aligned ) const { return _edgeMap.edge( he , aligned ); }
+		int edge( int he ) const { return _edgeMap.edge( he ); }
+#endif
+		const int *halfEdges( size_t e ) const { return _edgeMap[(int)e]; }
 		size_t tCount( void ) const { return _tCount; }
 		size_t vCount( void ) const { return _vCount; }
 		size_t eCount( void ) const { return _edgeMap.size(); }
+
+		void edgeVertices( int e , int& v1 , int& v2 ) const;
+		bool oppositeEdgeVertices( int e , int& v1 , int& v2 ) const;
+
 		SquareMatrix< Real , 2 >& g( size_t t ){ return _g[t]; }
 		const SquareMatrix< Real , 2 >& g( size_t t ) const { return _g[t]; }
 		int opposite( int he ) const { return _edgeMap.opposite( he ); }
-		RiemannianMesh( Pointer( TriangleIndex ) t , size_t tC );
+		RiemannianMesh( Pointer( TriIndex ) t , size_t tC );
 		~RiemannianMesh( void );
 
-		template< class Vertex > void setMetricFromEmbedding( ConstPointer( Vertex ) vertices );
+		template< unsigned int Dim > void setMetricFromEmbedding( ConstPointer( Point< Real , Dim > ) pointList );
+		template< unsigned int Dim > void setMetricFromEmbedding( std::function< Point< Real , Dim > (unsigned int) > PointList );
+		// To set the metric from the edge lengths, need to provide a pointer of 3*|T| edge lengths.
 		void setMetricFromEdgeLengths( ConstPointer( Real ) edgeLengths );
 		void setMetricFromSquareEdgeLengths( ConstPointer( Real ) squareEdgeLengths );
-		void makeUnitArea( void );
+
+		void makeUnitArea( void ){ makeArea( (Real)1. ); }
+		void makeArea( Real area );
 		Real area( void ) const;
 		Real area( int tIdx ) const;
+		// The number of half edges is 3*|T|
 		Real squareEdgeLength( int heIdx ) const;
 
 		// Get the associated index, given the triangle and the index of the element within the triangle
@@ -341,9 +430,10 @@ namespace FEM
 		template< unsigned int BasisType > int index( int t , int idx ) const;
 		template< unsigned int BasisType > int index( int t , int idx , bool& isAligned ) const;
 
-		template< unsigned int BasisType , class V >                  V   evaluateScalarField        ( ConstPointer( V ) coefficients , const SamplePoint< Real >& p ) const;
-		template< unsigned int BasisType , class V > CotangentVector< V > evaluateScalarFieldGradient( ConstPointer( V ) coefficients , const SamplePoint< Real >& p ) const;
-		template< unsigned int BasisType , class V > CotangentVector< V > evaluateCovectorField      ( ConstPointer( V ) coefficients , const SamplePoint< Real >& p ) const;
+		template< unsigned int BasisType , class V >                  V   evaluateScalarField            ( ConstPointer( V ) coefficients , const SamplePoint< Real >& p ) const;
+		template< unsigned int BasisType , class V > CotangentVector< V > evaluateScalarFieldDifferential( ConstPointer( V ) coefficients , const SamplePoint< Real >& p ) const;
+		template< unsigned int BasisType , class V >   TangentVector< V > evaluateScalarFieldGradient    ( ConstPointer( V ) coefficients , const SamplePoint< Real >& p ) const;
+		template< unsigned int BasisType , class V > CotangentVector< V > evaluateCovectorField          ( ConstPointer( V ) coefficients , const SamplePoint< Real >& p ) const;
 
 		/////////////////////////
 		// Geometric Operators //
@@ -353,31 +443,37 @@ namespace FEM
 		template< unsigned int BasisType , unsigned int PreBasisType , unsigned int PostBasisType > SparseMatrix< Real , int > stiffnessMatrix( ConstPointer( SquareMatrix< Real , 2 > ) newTensors = NullPointer< SquareMatrix< Real , 2 > >() ) const;
 		template< unsigned int BasisType > SparseMatrix< Real , int > stiffnessMatrix( void ) const;
 
+		template< unsigned int BasisType , unsigned int Degree , typename CotangentVectorFieldFunctor /* = std::function< RightTriangle< Real >::CotangentVectorField< Degree > ( unsigned int tIdx ) > */ >
+		SparseMatrix< Real , int > derivation( CotangentVectorFieldFunctor v ) const;
+
 		// Integrate the piecewise linear function over the mesh
 		Real getIntegral( ConstPointer( Real ) coefficients ) const;
 		Real getDotProduct( ConstPointer( Real ) c1 , ConstPointer( Real ) c2 , bool lump ) const;
 
-		CoordinateXForm< Real >  exp( ConstPointer( CoordinateXForm< Real > ) xForms , HermiteSamplePoint< Real >& p , Real eps=(Real)0 ) const;
-		CoordinateXForm< Real > flow( ConstPointer( CoordinateXForm< Real > ) xForms , const TangentVectorField< Real >& vf , Real flowTime , SamplePoint< Real >& p ,                                  Real minStepSize , Real eps=(Real)0 , std::vector< SamplePoint< Real > >* path=NULL ) const;
+		CoordinateXForm< Real >  exp( ConstPointer( CoordinateXForm< Real > ) xForms , HermiteSamplePoint< Real >& p , Real eps=(Real)0 , bool noWarning=false ) const;
+		CoordinateXForm< Real > flow( ConstPointer( CoordinateXForm< Real > ) xForms , const TangentVectorField< Real >& vf , Real flowTime , SamplePoint< Real >& p , Real minStepSize , Real eps=(Real)0 , std::vector< SamplePoint< Real > >* path=NULL , bool noWarning=false ) const;
 
 		Pointer( CoordinateXForm< Real > ) getCoordinateXForms( void ) const;
 		void                               setCoordinateXForms( Pointer( CoordinateXForm< Real > ) xForms ) const;
 		CoordinateXForm< Real > getVertexCoordinateXForm( ConstPointer( CoordinateXForm< Real > ) xForms , int t , int v ) const;
 		CoordinateXForm< Real > xForm( int he ) const;
 		std::vector< int > getVertexCorners( int t , int v ) const;
+		template< typename CornerFunctor /* = std::function< void ( int triangleIndex, int cornerInTriangleIndex ) > */ >
+		void processCorners( int t , int v , CornerFunctor &f ) const;
 		Real getVertexConeAngle( int t , int v ) const;
 
 		bool edgeFlip( int e , Real eps=0 );
 		bool isVoronoiEdge( int e , Real eps=0 ) const;
 
-#if 0
+		std::vector< SamplePoint< Real > > randomSamples( unsigned int count ) const;
+
 		void sanityCheck( ConstPointer( CoordinateXForm< Real > ) edges , Real eps=0 ) const;
-#endif
 	};
 	template< class Real , unsigned int BasisType >
 	struct TangentVectorFieldWrapper : public TangentVectorField< Real >
 	{
-		TangentVectorFieldWrapper( const RiemannianMesh< Real >* mesh , ConstPointer( Real ) coefficients , bool precomputeInverses=false );
+		template< typename Index >
+		TangentVectorFieldWrapper( const RiemannianMesh< Real , Index >* mesh , ConstPointer( Real ) coefficients , bool precomputeInverses=false );
 		~TangentVectorFieldWrapper( void );
 		TangentVector< Real > operator() ( const SamplePoint< Real >& p ) const;
 	protected:
@@ -390,7 +486,7 @@ template< class Real > const char* FEM::RightTriangle< Real >::CenterNames[] = {
 
 template< class Real > const Point2D< Real > FEM::RightTriangle< Real >::Corners        [] = { Point2D< Real >(0,0) , Point2D< Real >(1,0) , Point2D< Real >(0,1) };
 template< class Real > const Point2D< Real > FEM::RightTriangle< Real >::EdgeMidpoints  [] = { Point2D< Real >((Real)0.5,(Real)0.5) , Point2D< Real >(0,(Real)0.5) , Point2D< Real >((Real)0.5,0) };
-template< class Real > const FEM::CotangentVector< Real > FEM::RightTriangle< Real >::CornerGradients[] = { FEM::CotangentVector< Real >( Point2D< Real >(-1,-1) ) , FEM::CotangentVector< Real >( Point2D< Real >( 1, 0) ) , FEM::CotangentVector< Real >( Point2D< Real >( 0,1) ) };
+template< class Real > const FEM::CotangentVector< Real > FEM::RightTriangle< Real >::CornerDifferentials[] = { FEM::CotangentVector< Real >( Point2D< Real >(-1,-1) ) , FEM::CotangentVector< Real >( Point2D< Real >( 1, 0) ) , FEM::CotangentVector< Real >( Point2D< Real >( 0,1) ) };
 template< class Real > const FEM::  TangentVector< Real > FEM::RightTriangle< Real >::EdgeDirections [] = { FEM::  TangentVector< Real >( Point2D< Real >(-1, 1) ) , FEM::  TangentVector< Real >( Point2D< Real >( 0,-1) ) , FEM::  TangentVector< Real >( Point2D< Real >( 1,0) ) };
 
 template<> const unsigned int FEM::ElementInfo< FEM::ELEMENT_VERTEX   >::ElementsPerTriangle = 3;
@@ -398,5 +494,9 @@ template<> const unsigned int FEM::ElementInfo< FEM::ELEMENT_EDGE     >::Element
 template<> const unsigned int FEM::ElementInfo< FEM::ELEMENT_TRIANGLE >::ElementsPerTriangle = 1;
 
 #include "FEM.inl"
+
+#ifdef INCLUDE_EXTRA_FEM
+#include "FEM_Extra.h"
+#endif // INCLUDE_EXTRA_FEM
 
 #endif // FEM_INCLUDED

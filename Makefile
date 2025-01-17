@@ -1,62 +1,74 @@
 SHAPE_GRADIENT_DOMAIN_TARGET=ShapeGradientDomain
 NORMAL_SMOOTH_TARGET=NormalSmooth
-
 SHAPE_GRADIENT_DOMAIN_SOURCE=ShapeGradientDomain/ShapeGradientDomain.cpp
 NORMAL_SMOOTH_SOURCE=NormalSmooth/NormalSmooth.cpp
 
+COMPILER ?= gcc
+#COMPILER ?= clang
 
-CFLAGS += -fpermissive -fopenmp -Wno-deprecated -Wno-unused-result -Wno-format -msse2 -std=c++14 -DUSE_EIGEN
-LFLAGS += -lgomp -lpthread
+CFLAGS += -std=c++20 -Wno-deprecated -Wno-invalid-offsetof
+LFLAGS += -lstdc++
+ifeq ($(COMPILER),gcc)
+	CFLAGS += -fopenmp
+	LFLAGS += -lgomp -lpthread
+	CC=gcc
+	CXX=g++
+else
+	CFLAGS += -Wno-dangling-else -Wno-null-dereference
+	CC=clang
+	CXX=clang++
+	ifeq ($(SANITIZATION),none)
+		LFLAGS += -static
+	else
+		LFLAGS += -g -fsanitize=$(SANITIZATION)
+		CFLAGS += -O1 -g -fsanitize=$(SANITIZATION)
+	endif
+endif
 
-CFLAGS_DEBUG = -DDEBUG -g3
-LFLAGS_DEBUG =
+CFLAGS += -O3 -DRELEASE -funroll-loops -g
+LFLAGS += -O3 -g
 
-CFLAGS_RELEASE = -O3 -DRELEASE -funroll-loops -ffast-math
-LFLAGS_RELEASE = -O3 
-
-SRC = ./
-BIN = Bin/
-BIN_O = ./
+BIN = Bin/Linux/
+BIN_O = Obj/Linux/
 INCLUDE = /usr/include/ -I.
 
-CC=gcc
-CXX=g++
 MD=mkdir
 
 SHAPE_GRADIENT_DOMAIN_OBJECTS=$(addprefix $(BIN_O), $(addsuffix .o, $(basename $(SHAPE_GRADIENT_DOMAIN_SOURCE))))
+SHAPE_GRADIENT_DOMAIN_OBJECT_DIR=$(dir $(SHAPE_GRADIENT_DOMAIN_OBJECTS))
 NORMAL_SMOOTH_OBJECTS=$(addprefix $(BIN_O), $(addsuffix .o, $(basename $(NORMAL_SMOOTH_SOURCE))))
+NORMAL_SMOOTH_OBJECT_DIR=$(dir $(NORMAL_SMOOTH_OBJECTS))
 
-all: CFLAGS += $(CFLAGS_RELEASE)
-all: LFLAGS += $(LFLAGS_RELEASE)
-all: $(BIN)
+all: make_dirs
 all: $(BIN)$(SHAPE_GRADIENT_DOMAIN_TARGET)
 all: $(BIN)$(NORMAL_SMOOTH_TARGET)
 
-debug: CFLAGS += $(CFLAGS_DEBUG)
-debug: LFLAGS += $(LFLAGS_DEBUG)
-debug: $(BIN)
-debug: $(BIN)$(SHAPE_GRADIENT_DOMAIN_TARGET)
-debug: $(BIN)$(NORMAL_SMOOTH_TARGET)
+shapegradientdomain: make_dirs
+shapegradientdomain: $(BIN)$(SHAPE_GRADIENT_DOMAIN_TARGET)
+
+normalsmooth: make_dirs
+normalsmooth: $(BIN)$(NORMAL_SMOOTH_TARGET)
 
 clean:
-	rm -f $(BIN)$(SHAPE_GRADIENT_DOMAIN_TARGET)
-	rm -f $(BIN)$(NORMAL_SMOOTH_TARGET)
-	rm -f $(SHAPE_GRADIENT_DOMAIN_OBJECTS)
-	rm -f $(NORMAL_SMOOTH_OBJECTS)
+	rm -rf $(BIN)$(SHAPE_GRADIENT_DOMAIN_TARGET)
+	rm -rf $(BIN)$(NORMAL_SMOOTH_TARGET)
+	rm -rf $(BIN_O)
 
-$(BIN):
+make_dirs: FORCE
 	$(MD) -p $(BIN)
+	$(MD) -p $(BIN_O)
+	$(MD) -p $(SHAPE_GRADIENT_DOMAIN_OBJECT_DIR)
+	$(MD) -p $(NORMAL_SMOOTH_OBJECT_DIR)
+
 
 $(BIN)$(SHAPE_GRADIENT_DOMAIN_TARGET): $(SHAPE_GRADIENT_DOMAIN_OBJECTS)
-	$(CXX) -o $@ $(SHAPE_GRADIENT_DOMAIN_OBJECTS) $(LFLAGS)
+	$(CXX) -o $@ $(SHAPE_GRADIENT_DOMAIN_OBJECTS) -L$(BIN) $(LFLAGS)
 
 $(BIN)$(NORMAL_SMOOTH_TARGET): $(NORMAL_SMOOTH_OBJECTS)
-	$(CXX) -o $@ $(NORMAL_SMOOTH_OBJECTS) $(LFLAGS)
+	$(CXX) -o $@ $(NORMAL_SMOOTH_OBJECTS) -L$(BIN) $(LFLAGS)
 
-$(BIN_O)%.o: $(SRC)%.c
-	$(CC) -c -o $@ $(CFLAGS) -I$(INCLUDE) $<
 
 $(BIN_O)%.o: $(SRC)%.cpp
 	$(CXX) -c -o $@ $(CFLAGS) -I$(INCLUDE) $<
 
-
+FORCE:

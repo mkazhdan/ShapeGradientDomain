@@ -196,12 +196,8 @@ public:
 			// [WARNING] Changing szC and szD to size_t causes some really strange behavior.
 			difference_type szC = sizeof( C );
 			difference_type szD = sizeof( D );
-#if 1
 			// Since we are not actually accessing the values, we should not be bounds testing
 			data = (C*)a.ptr();
-#else
-			data = (C*)&a[0];
-#endif
 			min = ( a.minimum() * szD ) / szC;
 			max = ( a.maximum() * szD ) / szC;
 			if( min*szC!=a.minimum()*szD || max*szC!=a.maximum()*szD )
@@ -416,6 +412,7 @@ public:
 		return (*this);
 	}
 	inline ConstArray& operator ++ ( void ) { return (*this) += 1; }
+	inline ConstArray  operator ++ ( int ) { ConstArray tmp = (*this) ; (*this) +=1 ; return tmp; }
 	template< class Offset > ConstArray  operator -  ( Offset idx ) const { return (*this) +  (-idx); }
 	template< class Offset > ConstArray& operator -= ( Offset idx )       { return (*this) += (-idx); }
 	ConstArray& operator -- ( void ) { return (*this) -= 1; }

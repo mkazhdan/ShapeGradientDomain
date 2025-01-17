@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2010, Michael Kazhdan
+Copyright (c) 2023, Michael Kazhdan
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -25,13 +25,12 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
 ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-
-
 #ifndef SPARSE_MATRIX_INTERFACE_INCLUDED
 #define SPARSE_MATRIX_INTERFACE_INCLUDED
 
 #define FORCE_TWO_BYTE_ALIGNMENT 1
 #include "Array.h"
+#include "MultiThreading.h"
 #include <vector>
 
 
@@ -48,6 +47,7 @@ struct MatrixEntry
 	IndexType N;
 	T Value;
 };
+
 #if FORCE_TWO_BYTE_ALIGNMENT
 #pragma pack(pop)
 #endif // FORCE_TWO_BYTE_ALIGNMENT
@@ -81,8 +81,14 @@ public:
 	template< class T2 > void SetDiagonal( Pointer( T2 ) diagonal ) const;
 	template< class T2 > void JacobiIteration( ConstPointer( T2 ) diagonal , ConstPointer( T2 ) b , Pointer( T2 ) x , Pointer( T2 ) Mx , T2 sor ) const;
 	template< class T2 > void JacobiIteration( ConstPointer( T2 ) diagonal , ConstPointer( T2 ) b , Pointer( T2 ) x , T2 sor ) const { Pointer( T2 ) Mx = AllocPointer< T2 >( Rows() ) ; JacobiIteration( diagonal , b , x , Mx , sor ) ; FreePointer( Mx ); }
+#if 1
+	template< class T2 , bool StripDiagonal=false > void GSIteration(                                                        ConstPointer( T2 ) diagonal , ConstPointer( T2 ) b , Pointer( T2 ) x , bool forward ) const;
+	template< class T2 , bool StripDiagonal=false > void GSIteration( std::vector< std::vector< int > >& multiColorIndices , ConstPointer( T2 ) diagonal , ConstPointer( T2 ) b , Pointer( T2 ) x , bool forward ) const;
+#else
 	template< class T2 > void GSIteration(                                                        ConstPointer( T2 ) diagonal , ConstPointer( T2 ) b , Pointer( T2 ) x , bool forward ) const;
 	template< class T2 > void GSIteration( std::vector< std::vector< int > >& multiColorIndices , ConstPointer( T2 ) diagonal , ConstPointer( T2 ) b , Pointer( T2 ) x , bool forward ) const;
+
+#endif
 };
 // Assuming that the SPDOperator class defines:
 //		int SPDOperator::Rows( void ) const

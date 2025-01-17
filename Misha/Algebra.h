@@ -29,6 +29,8 @@ DAMAGE.
 #ifndef ALGEBRA_INCLUDED
 #define ALGEBRA_INCLUDED
 
+#include <cmath>
+
 template<class Element>
 class Group
 {
@@ -143,7 +145,7 @@ public:
 	}
 };
 
-template<class Real,class Element>
+template< class Real , class Element >
 class InnerProductSpace : public VectorSpace< Real , Element >
 {
 public:
@@ -156,6 +158,7 @@ public:
 	static Real Length          (const Element& e)                      { return Real( sqrt( e.InnerProduct(e) ) ); }
 	Real squareNorm( void ) const { return SquareNorm( *( ( Element* )this ) ); }
 };
+
 template<class Real,class Element>
 class Algebra : public VectorSpace<Real,Element>
 {
@@ -183,6 +186,7 @@ public:
 		return e1;
 	}
 };
+
 template< class Element >
 class Field
 {

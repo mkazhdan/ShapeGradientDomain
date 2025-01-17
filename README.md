@@ -1,12 +1,4 @@
-
-
-<html>
-<head>
-<title>Shape Gradient Domain (V1.0)</title>
-</head>
-<body>
-
-<CENTER><H2>Shape Gradient Domain (Version 1.0)</H2></CENTER>
+<CENTER><H2>Shape Gradient Domain (Version 2.0)</H2></CENTER>
 <CENTER>
 <A HREF="#LINKS">links</A>
 <A HREF="#DESCRIPTION">description</A>
@@ -17,9 +9,11 @@
 </CENTER>
 <HR>
 <A NAME="LINKS"><B>LINKS</B></A><br>
-<A href="http://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009 Paper</A>, <A href="http://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016 Paper</A><br>
-<A HREF="http://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/ShapeGradientDomain.x64.zip">Windows (x64) Executables</A><BR>
-<A href="http://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/ShapeGradientDomain.zip">Source Code</A><br>
+<A href="http://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009 Paper</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016 Paper</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/JCGT16.pdf">JCGT 2016 Paper</A><br>
+<A HREF="../ShapeGradientDomain.x64.zip">Windows (x64) Executables</A><BR>
+<A href="../ShapeGradientDomain.zip">Source Code</A><br> <A HREF="https://github.com/mkazhdan/ShapeGradientDomain">GitHub Repository</A><BR>
+(Older Versions:
+<A href="../Version1.0/">V1.0</A>)
 <br>
 
 
@@ -33,35 +27,37 @@ This code performs gradient domain processing on signals defined on a mesh, wher
 The code supports both sharpening and smoothing of the signals through the solution of a screened-Poisson equation.
 Specifically, given an input signal <I>F</I>, it solves for the signal <I>G</I> minimizing:<BR>
 <CENTER>
-<I>E</I>(<I>G</I>) = &alpha;&sdot;||<I>F</I>-<I>G</I>||<sup>2</sup> + ||&beta;&sdot;&nabla;<I>F</I> - &nabla;<I>G</I>||<sup>2</sup>
+<I>E</I>(<I>G</I>) = &alpha;&sdot;||<I>F</I>-<I>G</I>||<sup>2</sup> + &beta;&sdot;||&lambda;&sdot;&nabla;<I>F</I> - &nabla;<I>G</I>||<sup>2</sup>
 </CENTER><BR>
-where &alpha; is the value-fitting weight, and &beta; is the gradient scale factor.<br>
-The code supports inhomogenous processing by allowing the user to replace the Riemannian metric, <I>g</I>, given by the embedding, with a metric that adjusts to the curvature of the surface in two ways.
-<OL>
-<LI> <U><B>Anisotropic Processing</B></U>: Given orthonormal principal curvature directions, the (idenity) metric is replaced with:<BR>
+where &alpha; is the value-fitting weight, &beta; is the gradient-fitting weight, and &lambda; is the gradient scale factor.<br>
+The code supports inhomogenous processing by allowing the user to replace the Riemannian metric, <I>g</I>, given by the embedding, with a metric that adjusts to the curvature of the surface. Specifically, given orthonormal principal curvature directions, the (idenity) metric is replaced with:<BR>
 <CENTER> Id. + &epsilon;&sdot;&Kappa;<sup>2</sup></CENTER>
 where Id. is the identity matrix and &Kappa;<sup>2</sup> is the diagonal matrix whose entries are the squares of the principal curature values and &epsilon; is the curvature weight.<br>
-<LI> <U><B>Isotropic Processing</B></U>: Given orthonormal principal curvature directions, the (identity) metric is replaced with:<BR>
-<CENTER>( 1 + &epsilon;&sdot;tr(&Kappa;<sup>2</sup>)/2)&sdot;Id.</CENTER>
-where tr(&Kappa;<sup>2</sup>) is the total curvature (the sum of the squares of the principal curvatures) and &epsilon; is the curvature weight.<br>
-</OL>
-The curvature is estimated using the surface normals. If none are provided, the vertex normals are estimated as the area-weighted sum of adjacent triangle normals.
+Curvatures are estimated using the surface normals. If none are provided, the vertex normals are estimated as the area-weighted sum of adjacent triangle normals.
 <LI> <B><U>Normal Smooth</U></B>: [<A href="http://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016</A>]<P>
 This code performs multiple iterations of harmonic smoothing of the surface normals. As with the code above, this amounts to minimizing:<br>
 <CENTER>
-<I>E</I>(<I>G</I>) = &gamma;&sdot;||<I>F</I>-<I>G</I>||<sup>2</sup> + ||&nabla;<I>G</I>||<sup>2</sup>
+<I>E</I>(<I>G</I>) = ||<I>F</I>-<I>G</I>||<sup>2</sup> + &gamma;&sdot;||&nabla;<I>G</I>||<sup>2</sup>
 </CENTER><BR>
-where &gamma; is the value-fitting weight.<br>
+where &gamma; is the diffusion weight (time).<br>
 
 If no normals are provided, the vertex normals are estimated as the area-weighted sum of adjacent triangle normals.
 </UL>
 Note that when &beta; is set to zero the two executables differ in that the first emaulates harmonic flow from the input geometry to Euclidean three-space (allowing the variation at a vertex to occur in any direction) while the second emulates harmonic flow from the input geometry to the two-sphere (constrainting the variation at a vertex to occur in the tangent space of the associated normal).
 
 <HR>
-<A NAME="EXECUTABLES">
-<B><U>Shape Gradient Domain Processing</U>:</B><BR>
+<a name="EXECUTABLES"><b>EXECUTABLES</b></a><br>
+
+
 <UL>
 <DL>
+<DETAILS>
+<SUMMARY>
+<font size="+1"><b>ShapeGradientDomain</b></font>:
+Processes either the vertex positions, or per-vertex colors, performing isotropic/anisotropic gradient-domain smoothing and sharpening
+[<A href="http://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/JCGT16.pdf">JCGT 2016</A>]
+</SUMMARY>
+
 <DT><b>--in</b> &#60;<i>input geometry</i>&#62;
 <DD> This string specifies the name of the input geometry, represented in <A HREF="http://www.cc.gatech.edu/projects/large_models/ply.html">PLY</A> format.
 
@@ -70,10 +66,14 @@ Note that when &beta; is set to zero the two executables differ in that the firs
 
 <DT>[<b>--vWeight</b> &#60;<i>value interpolation weight</i>&#62;]
 <DD> This floating point value gives the weight for value interpolation (&alpha;).<BR>
-The default value for this parameter is 10<sup>4</sup>.<br>
+The default value for this parameter is 1.<br>
+
+<DT>[<b>--gWeight</b> &#60;<i>gradient interpolation weight</i>&#62;]
+<DD> This floating point value gives the weight for gradient interpolation (&beta;).<BR>
+The default value for this parameter is 10<sup>-4</sup>.<br>
 
 <DT>[<b>--gScale</b> &#60;<i>gradient scale</i>&#62;]
-<DD> This floating point value gives the scale factor for the target gradient field (&beta;).<BR>
+<DD> This floating point value gives the scale factor for the target gradient field (&lambda;).<BR>
 The default value for this parameter is 1.0.<br>
 
 <DT>[<b>--kWeight</b> &#60;<i>curvature weight</i>&#62;]
@@ -84,22 +84,24 @@ The default value for this parameter is 0.0.<br>
 <DD> If this flag is enabled, the signal to be processed is the per-vertex color field. Otherwise, it is the vertex positions.<BR>
 If the flag is enabled and the input file does not contain per-vertex colors, colors will be assigned from the normals.
 
-<DT>[<b>--aniso</b> &#60;<i>clamp type</i>&#62;]
-<DD> If specified, this integer value specifies the type of clamping to use for anisotropic filtering. This type of filtering scales the metric tensor along the principal curvature direction as a function of the associated principal curvature value. The three valid values for this parameter are:
-<UL>
-<LI> <B>1</B>: No clamping
-<LI> <B>2</B>: Positive clamping (only scale if the curvature is positive)
-<LI> <B>3</B>: Negative clamping (only scale if the curvature is negative)
-</UL>
-
 <DT>[<b>--verbose</b>]
 <DD> If this flag is enabled, the code will output processing information.
 
+</DETAILS>
+</DL>
 </UL>
 
-<B><U>Normal Smoothing</U>:</B><BR>
+
+
 <UL>
 <DL>
+<DETAILS>
+<SUMMARY>
+<font size="+1"><b>NormalSmooth</b></font>:
+Diffuses surface normals, restricting the change to be within the tangent plane [<A href="https://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016</A>].
+</SUMMARY>
+
+
 <DT><b>--in</b> &#60;<i>input geometry</i>&#62;
 <DD> This string specifies the name of the input geometry, represented in <A HREF="http://www.cc.gatech.edu/projects/large_models/ply.html">PLY</A> format.
 
@@ -110,50 +112,47 @@ If the flag is enabled and the input file does not contain per-vertex colors, co
 <DD> This integer value specifies the number of smoothing iterations that are to be performed..<BR>
 The default value for this parameter is 1.<br>
 
-<DT>[<b>--vWeight</b> &#60;<i>value interpolation weight</i>&#62;]
-<DD> This floating point value gives the weight for value interpolation (&gamma;).<BR>
-The default value for this parameter is 10<sup>4</sup>.<br>
+<DT>[<b>--dTime</b> &#60;<i>gradient interpolation weight / diffusion time</i>&#62;]
+<DD> This floating point value gives the weight for gradient interpolation / diffusion time (&gamma;).<BR>
+The default value for this parameter is 10<sup>-4</sup>.<br>
 
 <DT>[<b>--verbose</b>]
 <DD> If this flag is enabled, the code will output processing information.
 
+</DETAILS>
+</DL>
 </UL>
 
 
 <HR>
 <A NAME="NOTES"><B>NOTES</B></A><br>
 <UL>
-<LI> The code requires a numberical solver and supports either <A HREF="http://eigen.tuxfamily.org">Eigen</A> or <A HREF="http://faculty.cse.tamu.edu/davis/suitesparse.html">CHOLMOD</A>. There are visual studio project files and Makefiles for both. (The code should be easy to interface with Eigen. CHOLMOD promises to be trickier.)<br>
-If you are using Eigen and your implementation is backed by <A HREF="https://software.intel.com/en-us/intel-mkl/">Intel's Math Kernel Library</A> (see discussion <A HREF="https://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html">here</A>), use the "Eigen.MKL" Makefile/VS project to take advantage of the more efficient solver. (The different versions of the <A HREF="www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/ShapeGradientDomain.x64.zip">Windows executables</A> are similarly compiled with the different solvers.)
+<LI> The code requires <A HREF="http://eigen.tuxfamily.org">Eigen</A> as a numerical solver.<BR>
+If you are using Eigen and your implementation is backed by <A HREF="https://software.intel.com/en-us/intel-mkl/">Intel's Math Kernel Library</A> (see discussion <A HREF="https://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html">here</A>), enable the <CODE>EIGEN_USE_MKL_ALL</CODE> macro by defining it in the file <CODE>PreProcessor.h</CODE>. (The different versions of the <A HREF="www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/ShapeGradientDomain.x64.zip">Windows executables</A> are similarly compiled with the different solvers.)
 </UL>
 
 <HR>
 <A NAME="EXAMPLES"><B>EXAMPLES</B></A><br>
+The figure below shows example of both isotropic and anisotropic geometry processing.<BR>
 <UL>
-<LI> <B><U>Smoothing/sharpening without metric modification</U></B>
-<UL>
-<LI> When the gradient scale (&beta;) is set to a value smaller than 1, the gradients are dampened and the geometry is smoothed.
-<LI> When the gradient scale (&beta;) is set to a value larger than 1, the gradients are amplified and the geometry is sharpened.
-<LI> As the value interpolation weight (&alpha;) is increased, the results better preserve the input gometry, and the smoothing/sharpening is restricted to the higher frequencies.
+<LI> Geometric effects are obtained by either amplifying (&lambda;=2 in the top row) or dampening (&lambda;=0 in the bottom two rows) gradients.
+<LI> From left to right, the gradient weight is successively decreased (&beta;=10<sup>-3</sup>, &beta;=10<sup>-4</sup>, and &beta;=10<sup>-5</sup>) corresponding to successively more loacalized edits.
+<LI> The processing is isotropic in the top two rows (&epsilon;=0 and &gamma; is irrelevent) and isotropic in the bottom one (&epsilon;=0.02 and &gamma;=10<sup>-4</sup>).
 </UL>
-<CENTER><IMG SRC="gd.jpg" WIDTH="100%"></CENTER>
-<LI> <B><U>Smoothing with metric modification</U></B>
-<UL>
-<LI> Since the input geometry is noisy, a direct estimation of curvature would result in large curvature estimates everywhere, resulting in metric amplification everywhere, thereby nullifying the effects of smoothing.<BR>
-To mitigate this, we first run an initial pass of normal smoothing (&gamma;=1).
-<LI> As the value of the curvature weight (&epsilon;) is increased, the metric around sharp features is amplified, making it harder for the signal to diffuse across the features and resulting in edge-preserving smoothing.
-<LI> As the anisotrpic metric modification allows diffusion along direction of low curvature, these results exhibit a bit more smoothing near crease regions.
-</UL>
-<CENTER><IMG SRC="k.jpg" WIDTH="100%"></CENTER>
-</UL>
+
+<CENTER><IMG SRC="armadillo.png" HEIGHT=900></CENTER>
 
 
 
 <HR>
-<A NAME="CHANGES"><B>CHANGES</B></A><br>
+<DETAILS>
+<SUMMARY>
+<A NAME="CHANGES"><font size="+1"><b><B>HISTORY OF CHANGES</B></b></font></A>
+</SUMMARY>
+<a href="../Version2.0/">Version 2.0</a>:
+<OL>
+<LI> Added options to weight both value and gradient interpolation terms.
+<LI> Changed default values to correspond to diffusion time.
+</OL>
 
-<HR>
-<A HREF="http://www.cs.jhu.edu/~misha">HOME</A>
-
-</body>
-</html>
+</DETAILS>

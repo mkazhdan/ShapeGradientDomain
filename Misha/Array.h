@@ -30,8 +30,10 @@ DAMAGE.
 #define ARRAY_INCLUDED
 
 #include <vector>
+#include <cstring>
 
 #ifdef _WIN64
+#include <io.h>
 #define ASSERT( x ) { if( !( x ) ) __debugbreak(); }
 #else // !_WIN64
 #ifdef _WIN32
@@ -82,9 +84,9 @@ template< class C > ConstArray< C > GetPointer( const C* c , size_t sz ){ return
 //template< class C >      Array< C > GetPointer(      Array< C >& a ) { return a; }
 //template< class C > ConstArray< C > GetPointer( ConstArray< C >& a ) { return a; }
 
-template< class C >       C* GetAddress(       Array< C >&  a ){ return a.pointer(); }
-template< class C > const C* GetAddress( const Array< C >&  a ){ return a.pointer(); }
-template< class C > const C* GetAddress(  ConstArray< C >&  a ){ return a.pointer(); }
+template< class C >       C *GetAddress(       Array< C > &a ){ return a.ptr(); }
+template< class C > const C *GetAddress( const Array< C > &a ){ return a.ptr(); }
+template< class C > const C *GetAddress(  ConstArray< C > &a ){ return a.ptr(); }
 
 
 #else // !ARRAY_DEBUG

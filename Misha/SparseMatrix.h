@@ -30,8 +30,11 @@ DAMAGE.
 #define __SPARSEMATRIX_HPP
 #define MATRIX_MULTIPLY_INTERFACE 1
 
+#include "Vector.h"
 #include "SparseMatrixInterface.h"
 #include "Array.h"
+#include "MultiThreading.h"
+#include "Atomic.h"
 
 template< class T , class IndexType > class SparseMatrix : public SparseMatrixInterface< T , ConstPointer( MatrixEntry< T , IndexType > ) >
 {
@@ -50,6 +53,9 @@ public:
 	size_t rows;
 	Pointer( size_t ) rowSizes;
 
+	void read( FILE* fp );
+	void write( FILE* fp ) const;
+
 	SparseMatrix( void );
 	SparseMatrix( const SparseMatrix& M );
 	SparseMatrix( SparseMatrix&& M );
@@ -63,6 +69,8 @@ public:
 
 	template< class T2 > void operator()( const T2* in , T2* out ) const;
 
+	template< class T2 > Vector< T2 > operator * ( const Vector< T2 >& V ) const;
+
 	template< class T2 , class IndexType2 >
 	SparseMatrix< T , IndexType >& copy( const SparseMatrix< T2 , IndexType2 >& M );
 
@@ -75,10 +83,13 @@ public:
 	void resize	( size_t rows );
 	void SetRowSize( size_t row , size_t count );
 	void ResetRowSize( size_t row , size_t count );
+	void CollapseRow( int row );
+	void CollapseRows( void );
 	inline      Pointer( MatrixEntry< T , IndexType > ) operator[] ( size_t idx )       { return _entries[idx]; }
 	inline ConstPointer( MatrixEntry< T , IndexType > ) operator[] ( size_t idx ) const { return _entries[idx]; }
 
-	double SquareNorm(void) const;
+	double SquareNorm( void ) const { return SquareNorm( []( T t ){ return t*t; } ); }
+	template< typename SquareNormFunctor > double SquareNorm( SquareNormFunctor F=[]( T t ){ return t*t; } ) const;
 	double ASymmetricSquareNorm( void ) const;
 	double AHermitianSquareNorm( void ) const;
 
@@ -132,6 +143,16 @@ template< class T , class IndexType >
 bool Transpose( const SparseMatrix< T , IndexType >& At , SparseMatrix< T , IndexType >& A , size_t outRows , T (*TransposeFunction)( const T& )=NULL );
 #endif // MATRIX_MULTIPLY_INTERFACE
 
+template< class T , class IndexType >
+class SparseSymmetricMatrix : public SparseMatrix< T , IndexType >
+{
+public:
+	template<class T2>
+	Vector<T2> operator * (const Vector<T2>& V) const;
+	template<class T2>
+	void Multiply			( const Vector<T2>& In, Vector<T2>& Out ) const;
+};
+
 template< class T , unsigned int Radius > class BandedMatrixIterator
 {
 	size_t _rows , _row;
@@ -181,5 +202,11 @@ public:
 	double squareNorm( void ) const;
 };
 
+template <class Matrix,class Data>
+static unsigned int SolveConjugateGradient( const Matrix& SPD , const Vector<Data>& b , const int& iters , Vector<Data>& solution , const double eps=1e-8 );
+template <class Matrix,class IPS,class Real>
+static unsigned int SolveConjugateGradient( const Matrix& SPD , const Vector<IPS>& b , const int& iters , Vector<IPS>& solution , const double eps=1e-8 );
+template <class Matrix,class IPS,class Real>
+static unsigned int SolveConjugateGradient2( const Matrix& SPD , const Vector<IPS>& b , const int& iters , Vector<IPS>& solution , const double eps=1e-8 );
 #include "SparseMatrix.inl"
 #endif /* __SPARSEMATRIX_HPP */

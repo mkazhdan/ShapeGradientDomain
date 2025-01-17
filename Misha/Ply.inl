@@ -1,5 +1,5 @@
-/* -*- C++ -*-
-Copyright (c) 2006, Michael Kazhdan and Matthew Bolitho
+/*
+Copyright (c) 2019, Michael Kazhdan
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -25,1025 +25,891 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
 ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-#include <unordered_map>
 
-static char *full_elem_names[] = { "vertex", "edge" , "face" };
-static char *elem_names[] = { "vertex", "face" };
-
-struct PlyEdge{ int v1 , v2; };
-typedef struct PlyFace
+namespace PLY
 {
-	unsigned int nr_vertices;
-	int *vertices;
-} PlyFace;
-typedef struct PlyColorFace
-{
-	unsigned int nr_vertices;
-	int *vertices;
-	float r , g , b;
-} PlyColorFace;
-typedef struct PlyStrip
-{
-	unsigned int nr_vertices;
-	int *vertices;
-} PlyStrip;
-
-static PlyProperty edge_props[] = { 
-	{ "v1" , PLY_INT , PLY_INT , (int)offsetof( PlyEdge , v1 ) , 0 , 0 , 0 , 0 },
-	{ "v2" , PLY_INT , PLY_INT , (int)offsetof( PlyEdge , v2 ) , 0 , 0 , 0 , 0 }
-};
-static PlyProperty face_props[] =
-{
-	{ "vertex_indices" , PLY_INT , PLY_INT , offsetof( PlyFace , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( PlyFace , nr_vertices ) } ,
-};
-static PlyProperty color_face_props[] =
-{
-	{ "vertex_indices" , PLY_INT , PLY_INT , offsetof( PlyFace , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( PlyFace , nr_vertices ) } ,
-	{ "red"   , PLY_FLOAT , PLY_FLOAT , offsetof( PlyColorFace , r ) , 0 , 0 , 0 , 0 } ,
-	{ "green" , PLY_FLOAT , PLY_FLOAT , offsetof( PlyColorFace , g ) , 0 , 0 , 0 , 0 } ,
-	{ "blue"  , PLY_FLOAT , PLY_FLOAT , offsetof( PlyColorFace , b ) , 0 , 0 , 0 , 0 } ,
-};
-static PlyProperty strip_props[] =
-{
-	{ "vertex_indices" , PLY_INT , PLY_INT , offsetof( PlyFace , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( PlyFace , nr_vertices )	},
-};
-
-template< class Vertex >
-int PlyWrite
-	(
-	const char* fileName,
-	const std::vector< Vertex >& vertices , 
-	const std::vector< std::pair< int , int > >* edges , 
-	const std::vector< std::vector< int > >* polygons,
-	PlyProperty* vertexProperties , int vertexPropertyNum ,
-	int file_type ,
-	char** comments , const int& commentNum
-	)
-{
-	int nr_vertices =            (int) vertices.size()    ;
-	int nr_edges    = edges    ? (int)   edges->size() : 0;
-	int nr_faces    = polygons ? (int)polygons->size() : 0;
-	float version;
-	PlyFile *ply = ply_open_for_writing( fileName , 3 , full_elem_names , file_type , &version );
-	if( !ply ) return 0;
-	
-	//
-	// describe vertex, edge, and face properties
-	//
+	template<> inline int Type<               char >( void ){ return PLY_CHAR      ; }
+	template<> inline int Type< unsigned      char >( void ){ return PLY_UCHAR     ; }
+	template<> inline int Type<                int >( void ){ return PLY_INT       ; }
+	template<> inline int Type< unsigned       int >( void ){ return PLY_UINT      ; }
+	template<> inline int Type<          long long >( void ){ return PLY_LONGLONG  ; }
+	template<> inline int Type< unsigned long long >( void ){ return PLY_ULONGLONG ; }
+	template<> inline int Type<             float  >( void ){ return PLY_FLOAT     ; }
+	template<> inline int Type<             double >( void ){ return PLY_DOUBLE    ; }
+	template< class Real > inline int Type( void )
 	{
-		ply_element_count( ply , "vertex" , nr_vertices );
-		for( int i=0 ; i<vertexPropertyNum ; i++ ) ply_describe_property( ply , "vertex" ,  &vertexProperties[i] );
+		ERROR_OUT( "Unrecognized type" );
+		return -1;
 	}
-	{
-		ply_element_count( ply , "edge" , nr_edges );
-		ply_describe_property( ply , "edge" , &edge_props[0] );
-		ply_describe_property( ply , "edge" , &edge_props[1] );
-	}
-	{
-		ply_element_count( ply , "face" , nr_faces );
-		ply_describe_property( ply , "face" , &face_props[0] );
-	}
-	
-	// Write in the comments
-	if( comments && commentNum ) for( int i=0 ; i<commentNum ; i++ ) ply_put_comment( ply , comments[i] );
 
-	ply_header_complete( ply );
-	
-	// write vertices
-	ply_put_element_setup( ply , "vertex" );
-	for( int i=0 ; i<nr_vertices ; i++ ) ply_put_element( ply , (void*)&vertices[i] );
+	template<> const std::string Traits<               char >::name="char";
+	template<> const std::string Traits< unsigned      char >::name="unsigned char";
+	template<> const std::string Traits<                int >::name="int";
+	template<> const std::string Traits< unsigned       int >::name="unsigned int";
+	template<> const std::string Traits<               long >::name="long";
+	template<> const std::string Traits< unsigned      long >::name="unsigned long";
+	template<> const std::string Traits<          long long >::name="long long";
+	template<> const std::string Traits< unsigned long long >::name="unsigned long long";
+	template<> const std::string Traits<              float >::name="float";
+	template<> const std::string Traits<             double >::name="double";
 
-	// write edges
-	if( nr_edges )
+#if 1
+	template< typename Index >
+	PlyProperty Face< Index >::Properties[] = { PlyProperty( "vertex_indices" , Type< Index >() , Type< Index >() , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
+#else
+	template<>
+	PlyProperty Face<          int       >::Properties[] = { PlyProperty( "vertex_indices" , PLY_INT       , PLY_INT       , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
+	template<>
+	PlyProperty Face< unsigned int       >::Properties[] = { PlyProperty( "vertex_indices" , PLY_UINT      , PLY_UINT      , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
+	template<>
+	PlyProperty Face<          long long >::Properties[] = { PlyProperty( "vertex_indices" , PLY_LONGLONG  , PLY_LONGLONG  , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
+	template<>
+	PlyProperty Face< unsigned long long >::Properties[] = { PlyProperty( "vertex_indices" , PLY_ULONGLONG , PLY_ULONGLONG , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
+#endif
+
+	struct Edge{ int v1 , v2; };
+	const PlyProperty EdgeProps[] =
+	{ 
+		{ "v1" , PLY_INT , PLY_INT , (int)offsetof( Edge , v1 ) , 0 , 0 , 0 , 0 },
+		{ "v2" , PLY_INT , PLY_INT , (int)offsetof( Edge , v2 ) , 0 , 0 , 0 , 0 }
+	};
+
+	// Read
+	inline void ReadHeader( std::string fileName , const PlyProperty *properties , int propertyNum , bool *readFlags , int &file_type )
 	{
-		PlyEdge ply_edge;
-		ply_put_element_setup( ply , "edge" );
-		for( int i=0 ; i<nr_edges ; i++ )
+		std::vector< std::string > elist;
+		float version;
+
+		PlyFile *ply = PlyFile::Read( fileName , elist , file_type , version );
+		if( !ply ) THROW( "could not create read ply file: " , fileName );
+
+		for( int i=0 ; i<(int)elist.size() ; i++ ) if( elist[i]=="vertex" ) for( int j=0 ; j<propertyNum ; j++ ) if( readFlags ) readFlags[j] = ply->get_property( elist[i] , &properties[j] )!=0;
+
+		delete ply;
+	}
+
+	inline void ReadHeader( std::string fileName , const PlyProperty *properties , int propertyNum , bool *readFlags )
+	{
+		int file_type;
+		ReadHeader( fileName , properties , propertyNum , readFlags , file_type );
+	}
+
+	std::vector< PlyProperty > ReadVertexHeader( std::string fileName , int &file_type )
+	{
+		float version;
+		std::vector< std::string > elist;
+		std::vector< PlyProperty > properties;
+
+		PlyFile *ply = PlyFile::Read( fileName , elist , file_type , version );
+		if( !ply ) THROW( "could not create read ply file: " , fileName );
+
+		for( int i=0 ; i<elist.size() ; i++ )
 		{
-			ply_edge.v1 = (*edges)[i].first , ply_edge.v2 = (*edges)[i].second;
-			ply_put_element( ply , (void*)&ply_edge );
+			std::string &elem_name = elist[i];
+			size_t num_elems;
+			std::vector< PlyProperty * > plist = ply->get_element_description( elem_name , num_elems );
+			if( !num_elems ) continue;
+			else if( !plist.size() )
+			{
+				delete ply;
+				THROW( "could not get element description for: " , elem_name );
+			}
+			if( elem_name=="vertex" ) for( unsigned int i=0 ; i<plist.size() ; i++ ) properties.push_back( *plist[i] );
+		}
+		delete ply;
+		return properties;
+	}
+
+	std::vector< PlyProperty > ReadVertexHeader( std::string fileName ){ int file_type; return ReadVertexHeader( fileName , file_type ); }
+
+
+	template< class VertexFactory , typename Index >
+	void Read
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		std::vector< typename VertexFactory::VertexType > &vertices , 
+		std::vector< std::pair< Index , Index > > *edges ,
+		std::vector< std::vector< Index > > *polygons ,
+		bool *vertexPropertiesFlag ,
+		int &file_type ,
+		std::vector< std::string > *comments
+	)
+	{
+		float version;
+		std::vector< std::string > elist;
+
+		PlyFile *ply = PlyFile::Read( fileName , elist , file_type , version );
+		if( !ply ) THROW( "could not create read ply file: " , fileName );
+
+		if( comments )
+		{
+			comments->reserve( comments->size() + ply->comments.size() );
+			for( int i=0 ; i<(int)ply->comments.size() ; i++ ) comments->push_back( ply->comments[i] );
+		}
+
+		for( int i=0 ; i<elist.size() ; i++ )
+		{
+			std::string &elem_name = elist[i];
+			size_t num_elems;
+			std::vector< PlyProperty * > plist = ply->get_element_description( elem_name , num_elems );
+			if( !num_elems ) continue;
+			else if( !plist.size() )
+			{
+				delete ply;
+				THROW( "could not get element description for: " , elem_name );
+			}
+#if 1
+			if( elem_name=="vertex" )
+			{
+				for( unsigned int i=0 ; i<vFactory.plyReadNum() ; i++)
+				{
+					PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticReadProperty(i) : vFactory.plyReadProperty(i);
+					int hasProperty = ply->get_property( elem_name , &prop );
+					if( vertexPropertiesFlag ) vertexPropertiesFlag[i] = (hasProperty!=0);
+				}
+				vertices.resize( num_elems , vFactory() );
+
+				char *buffer = new char[ vFactory.bufferSize() ];
+				for( size_t j=0 ; j<num_elems ; j++ )
+				{
+					if( vFactory.isStaticallyAllocated() ) ply->get_element( (void *)&vertices[j] );
+					else
+					{
+						ply->get_element( (void *)buffer );
+						vFactory.fromBuffer( buffer , vertices[j] );
+					}
+				}
+				delete[] buffer;
+			}
+#else
+			if( elem_name=="vertex" )
+			{
+				for( unsigned int i=0 ; i<vFactory.plyReadNum() ; i++)
+				{
+					PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticReadProperty(i) : vFactory.plyReadProperty(i);
+					int hasProperty = ply->get_property( elem_name , &prop );
+					if( vertexPropertiesFlag ) vertexPropertiesFlag[i] = (hasProperty!=0);
+				}
+				vertices.resize( num_elems , vFactory() );
+
+				char *buffer = new char[ vFactory.bufferSize() ];
+				for( size_t j=0 ; j<num_elems ; j++ )
+				{
+					if( vFactory.isStaticallyAllocated() ) ply->get_element( (void *)&vertices[j] );
+					else
+					{
+						ply->get_element( (void *)buffer );
+						vFactory.fromBuffer( buffer , vertices[j] );
+					}
+				}
+				delete[] buffer;
+			}
+#endif
+			else if( elem_name=="face" && polygons )
+			{
+				ply->get_property( elem_name , &Face< Index >::Properties[0] );
+				polygons->resize( num_elems );
+				for( int j=0 ; j<num_elems ; j++ )
+				{
+					Face< Index > ply_face;
+					ply->get_element( (void *)&ply_face );
+					(*polygons)[j].resize( ply_face.nr_vertices );
+					for( unsigned int k=0 ; k<ply_face.nr_vertices ; k++ ) (*polygons)[j][k] = ply_face.vertices[k];
+					free( ply_face.vertices );
+				}  // for, read faces
+			}  // if face
+			else if( elem_name=="edge" && edges )
+			{
+				ply->get_property( elem_name , &EdgeProps[0] );
+				ply->get_property( elem_name , &EdgeProps[1] );
+				edges->resize( num_elems );
+				for( int j=0 ; j<num_elems ; j++ )
+				{
+					Edge ply_edge;
+					ply->get_element( (void*)&ply_edge );
+					(*edges)[j].first = ply_edge.v1 , (*edges)[j].second = ply_edge.v2;
+				}
+			}
+			else ply->get_other_element( elem_name , num_elems );
+
+			for( int j=0 ; j<plist.size() ; j++ ) delete plist[j];
+		}  // for each type of element
+		delete ply;
+	}
+
+	template< class VertexFactory , typename Index >
+	void Read
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		std::vector< typename VertexFactory::VertexType > &vertices , 
+		std::vector< std::pair< Index , Index > > *edges ,
+		std::vector< std::vector< Index > > *polygons ,
+		bool *vertexPropertiesFlag
+	)
+	{
+		int file_type;
+		return Read< VertexFactory , Index >( fileName , vFactory , vertices , edges , polygons , vertexPropertiesFlag , file_type );
+	}
+
+	template< class VertexFactory >
+	void ReadVertices
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		std::vector< typename VertexFactory::VertexType > &vertices ,
+		bool* vertexPropertiesFlag ,
+		int& file_type ,
+		std::vector< std::string > *comments
+	)
+	{
+		return Read< VertexFactory , unsigned int >( fileName , vFactory , vertices , NULL , NULL , vertexPropertiesFlag , file_type , comments );
+	}
+
+	template< class VertexFactory >
+	void ReadVertices
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		std::vector< typename VertexFactory::VertexType > &vertices ,
+		bool* vertexPropertiesFlag
+	)
+	{
+		int file_type;
+		return Read< VertexFactory , unsigned int >( fileName , vFactory , vertices , NULL , NULL , vertexPropertiesFlag , file_type , NULL );
+	}
+
+
+	template< typename VertexFactory , typename Real , unsigned int Dim , typename Index >
+	void ReadTriangles
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		std::vector< typename VertexFactory::VertexType > &vertices ,
+		std::vector< SimplexIndex< 2 , Index > > &triangles ,
+		bool* vertexPropertiesFlag ,
+		int& file_type ,
+		std::function< Point< Real , Dim > ( typename VertexFactory::VertexType ) > VertexToPointFunctor ,
+		std::vector< std::string > *comments
+	)
+	{
+		MinimalAreaTriangulation< Real , Dim > MAT;
+		std::vector< std::vector< Index > > polygons;
+		ReadPolygons( fileName , vFactory , vertices , polygons , vertexPropertiesFlag , file_type , comments );
+		std::vector< Point3D< Real > > poly;
+		std::vector< SimplexIndex< 2 , Index > > tris;
+
+		triangles.clear();
+		for( unsigned int i=0 ; i<polygons.size() ; i++ )
+		{
+			poly.resize( polygons[i].size( ) );
+			for( unsigned int j=0 ; j<polygons[i].size() ; j++ ) poly[j] = VertexToPointFunctor( vertices[ polygons[i][j] ] );
+			MAT.GetTriangulation( poly , tris );
+			for( unsigned int j=0 ; j<tris.size() ; j++ )
+			{
+				SimplexIndex< 2 , Index > tri;
+				tri[0] = polygons[i][ tris[j][0] ];
+				tri[1] = polygons[i][ tris[j][1] ];
+				tri[2] = polygons[i][ tris[j][2] ];
+				triangles.push_back( tri );
+			}
 		}
 	}
 
-	// write faces
-	if( nr_faces )
-	{
-		PlyFace ply_face;
-		int maxFaceVerts=3;
-		ply_face.nr_vertices = 3;
-		ply_face.vertices = new int[3];
 
-		ply_put_element_setup( ply , "face" );
+	template< typename VertexFactory , typename Index >
+	void ReadTriangles
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		std::vector< typename VertexFactory::VertexType > &vertices ,
+		std::vector< SimplexIndex< 2 , Index > > &triangles ,
+		bool* vertexPropertiesFlag ,
+		int& file_type ,
+		std::vector< std::string > *comments
+	)
+	{
+		std::vector< std::vector< Index > > polygons;
+		ReadPolygons( fileName , vFactory , vertices , polygons , vertexPropertiesFlag , file_type , comments );
+		triangles.resize( polygons.size() );
+		for( unsigned int i=0 ; i<polygons.size() ; i++ )
+		{
+			if( polygons[i].size()!=3 ) ERROR_OUT( "Polygon is not a triangle: " , polygons[i].size() , " != " , 3 );
+			for( int j=0 ; j<3 ; j++ ) triangles[i][j] = polygons[i][j];
+		}
+	}
+
+	template< class VertexFactory , typename Index >
+	void ReadPolygons
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		std::vector< typename VertexFactory::VertexType > &vertices ,
+		std::vector< std::vector< Index > > &polygons ,
+		bool *readFlags ,
+		int &file_type ,
+		std::vector< std::string > *comments
+	)
+	{
+		std::vector< std::string > elist;
+		float version;
+		PlyFile *ply = PlyFile::Read( fileName , elist , file_type , version );
+		if( !ply ) THROW( "could not create read ply file: " , fileName );
+
+		if( comments )
+		{
+			comments->reserve( comments->size() + ply->comments.size() );
+			for( int i=0 ; i<(int)ply->comments.size() ; i++ ) comments->push_back( ply->comments[i] );
+		}
+
+		for( int i=0 ; i<(int)elist.size() ; i++ )
+		{
+			std::string &elem_name = elist[i];
+			size_t num_elems;
+			std::vector< PlyProperty * > plist = ply->get_element_description( elem_name , num_elems );
+			if( !num_elems ) continue;
+			else if( !plist.size() )
+			{
+				delete ply;
+				THROW( "could not get element description for: " , elem_name );
+			}
+			if( elem_name=="vertex" )
+			{
+				for( unsigned int i=0 ; i<vFactory.plyReadNum() ; i++)
+				{
+					PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticReadProperty(i) : vFactory.plyReadProperty(i);
+					int hasProperty = ply->get_property( elem_name , &prop );
+					if( readFlags ) readFlags[i] = (hasProperty!=0);
+				}
+				vertices.resize( num_elems , vFactory() );
+
+				char *buffer = new char[ vFactory.bufferSize() ];
+				for( size_t j=0 ; j<num_elems ; j++ )
+				{
+					if( vFactory.isStaticallyAllocated() ) ply->get_element( (void *)&vertices[j] );
+					else
+					{
+						ply->get_element( (void *)buffer );
+						vFactory.fromBuffer( buffer , vertices[j] );
+					}
+				}
+				delete[] buffer;
+			}
+			else if( elem_name=="face" )
+			{
+				ply->get_property( elem_name , &Face< Index >::Properties[0] );
+				polygons.resize( num_elems );
+				for( unsigned int j=0 ; j<num_elems ; j++ )
+				{
+					Face< Index > ply_face;
+					ply->get_element( (void *)&ply_face );
+					polygons[j].resize( ply_face.nr_vertices );
+					for( unsigned int k=0 ; k<ply_face.nr_vertices ; k++ ) polygons[j][k] = ply_face.vertices[k];
+					free( ply_face.vertices );
+				}  // for, read faces
+			}  // if face
+			else ply->get_other_element( elem_name , num_elems );
+
+			for( int j=0 ; j<(int)plist.size() ; j++ ) delete plist[j];
+		}  // for each type of element
+
+		delete ply;
+	}
+
+	template< class VertexFactory , typename Index >
+	void ReadPolygons
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		std::vector< typename VertexFactory::VertexType > &vertices ,
+		std::vector< std::vector< Index > > &polygons ,
+		bool *readFlags
+	)
+	{
+		int file_type;
+		return ReadPolygons< VertexFactory , Index >( fileName , vFactory , vertices , polygons , readFlags , file_type );
+	}
+
+	template< class VertexFactory , class Polygon >
+	int ReadPolygons
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		std::vector< typename VertexFactory::VertexType >& vertices ,
+		std::vector< Polygon >& polygons ,
+		bool *vertexPropertiesFlag ,
+		PlyProperty *polygonProperties ,
+		bool *polygonPropertiesFlag , int polygonPropertyNum ,
+		int& file_type,
+		std::vector< std::string > *comments
+	)
+	{
+		std::vector< std::string > elist = { std::string( "vertex" ) , std::string( "face" ) };
+		float version;
+
+		PlyFile *ply = PlyFile::Read( fileName , elist , file_type , version );
+		if(!ply) return 0;
+
+		if( comments )
+		{
+			comments->reserve( comments->size() + ply->comments.size() );
+			for( int i=0 ; i<ply->comments.size() ; i++ ) comments->push_back( ply->comments[i] );
+		}
+
+		for( int i=0 ; i<elist.size() ; i++ )
+		{
+			std::string &elem_name = elist[i];
+			size_t num_elems;
+			std::vector< PlyProperty * > plist = ply->get_element_description( elem_name , num_elems );
+			if( !plist.size() )
+			{
+				delete ply;
+				return 0;
+			}		
+			if( elem_name=="vertex" )
+			{
+				for( unsigned int i=0 ; i<vFactory.plyReadNum() ; i++ )
+				{
+					PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticReadProperty(i) : vFactory.plyReadProperty(i);
+					int hasProperty = ply->get_property( elem_name , &prop );
+					if( vertexPropertiesFlag ) vertexPropertiesFlag[i] = (hasProperty!=0);
+				}
+				vertices.resize( num_elems , vFactory() );
+
+				char *buffer = new char[ vFactory.bufferSize() ];
+				for( size_t j=0 ; j<num_elems ; j++ )
+				{
+					if( vFactory.isStaticallyAllocated() ) ply->get_element( (void *)&vertices[j] );
+					else
+					{
+						ply->get_element( (void *)buffer );
+						vFactory.fromBuffer( buffer , vertices[j] );
+					}
+				}
+				delete[] buffer;
+			}
+			else if( elem_name=="face" )
+			{
+				for( int i=0 ; i<polygonPropertyNum ; i++ )
+				{
+					int hasProperty = ply->get_property( elem_name , &polygonProperties[i] );
+					if( polygonPropertiesFlag ) polygonPropertiesFlag[i] = (hasProperty!=0);
+				}
+				polygons.resize( num_elems );
+				for( size_t j=0 ; j<num_elems ; j++ ) ply->get_element( (void *)&polygons[j] );
+			}
+			else ply->get_other_element( elem_name , num_elems );
+
+			for( int j=0 ; j<plist.size() ; j++ ) delete plist[j];
+		}
+		delete ply;
+		return 1;
+	}
+
+	template< class VertexFactory , typename Index >
+	void ReadTetrahedra
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		std::vector< typename VertexFactory::VertexType > &vertices ,
+		std::vector< SimplexIndex< 3 , Index > > &tetrahedra ,
+		bool* vertexPropertiesFlag ,
+		int& file_type ,
+		std::vector< std::string > *comments
+	)
+	{
+		std::vector< std::vector< Index > > polygons;
+		ReadPolygons( fileName , vFactory , vertices , polygons , vertexPropertiesFlag , file_type , comments );
+
+		for( int i=0 ; i<polygons.size() ; i++ ) if( polygons[i].size()!=4 ) ERROR_OUT( "Expected polygon with four vertices" );
+		tetrahedra.resize( polygons.size() );
+		for( unsigned int i=0 ; i<polygons.size() ; i++ ) for( int j=0 ; j<4 ; j++ ) tetrahedra[i][j] = polygons[i][j];
+	}
+
+	template< class VertexFactory , unsigned int K , typename Index >
+	void ReadSimplices
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		std::vector< typename VertexFactory::VertexType > &vertices ,
+		std::vector< SimplexIndex< K , Index > > &simplexIndices ,
+		bool *vertexPropertiesFlag ,
+		int &file_type ,
+		std::vector< std::string > *comments
+	)
+
+	{
+		std::vector< std::vector< Index > > polygons;
+		ReadPolygons( fileName , vFactory , vertices , polygons , vertexPropertiesFlag , file_type , comments );
+
+#if 1
+		for( int i=0 ; i<polygons.size() ; i++ ) if( polygons[i].size()!=K+1 ) THROW( "Expected polygon with " , K+1 , " vertices" );
+#else
+		for( int i=0 ; i<polygons.size() ; i++ ) if( polygons[i].size()!=K+1 ) ERROR_OUT( "Expected polygon with " , K+1 , " vertices" );
+#endif
+		simplexIndices.resize( polygons.size() );
+		for( unsigned int i=0 ; i<polygons.size() ; i++ ) for( int j=0 ; j<=K ; j++ ) simplexIndices[i][j] = polygons[i][j];
+	}
+	template< class VertexFactory , unsigned int K , typename Index >
+	void WriteSimplices
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		const std::vector< typename VertexFactory::VertexType > &vertices ,
+		const std::vector< SimplexIndex< K , Index > > &simplexIndices ,
+		int file_type ,
+		std::vector< std::string > *comments=NULL
+	)
+	{
+		std::vector< std::vector< Index > > polygons( simplexIndices.size() );
+		for( unsigned int i=0 ; i<simplexIndices.size() ; i++ )
+		{
+			polygons[i].resize( K+1 );
+			for( unsigned int k=0 ; k<=K ; k++ ) polygons[i][k] = simplexIndices[i][k];
+		}
+		WritePolygons( fileName , vFactory , vertices , polygons , file_type , comments );
+	}
+
+	// Write
+	template< typename VertexFactory , typename Index >
+	void Write
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		const std::vector< typename VertexFactory::VertexType > &vertices , 
+		const std::vector< std::pair< Index , Index > > *edges , 
+		const std::vector< std::vector< Index > > *polygons,
+		int file_type ,
+		const std::vector< std::string > *comments
+	)
+	{
+		int nr_vertices =            (int) vertices.size()    ;
+		int nr_edges    = edges    ? (int)   edges->size() : 0;
+		int nr_faces    = polygons ? (int)polygons->size() : 0;
+		float version;
+		std::vector< std::string > elist = { std::string( "vertex" ) , std::string( "edge" ) , std::string( "face" ) };
+
+		PlyFile *ply = PlyFile::Write( fileName , elist , file_type , version );
+		if( !ply ) THROW( "could not create write ply file: " , fileName );
+
+		//
+		// describe vertex, edge, and face properties
+		//
+		{
+			ply->element_count( "vertex", nr_vertices );
+			for( unsigned int i=0 ; i<vFactory.plyWriteNum() ; i++ )
+			{
+				PlyProperty property = vFactory.plyWriteProperty( i );
+				ply->describe_property( "vertex" , &property );
+			}
+		}
+		{
+			ply->element_count( "edge" , nr_edges );
+			ply->describe_property( "edge" , &EdgeProps[0] );
+			ply->describe_property( "edge" , &EdgeProps[1] );
+		}
+		{
+			ply->element_count( "face" , nr_faces );
+			ply->describe_property( "face" , &Face< Index >::Properties[0] );
+		}
+
+		// Write in the comments
+		if( comments ) for( int i=0 ; i<comments->size() ; i++ ) ply->put_comment( (*comments)[i] );
+
+		ply->header_complete();
+
+		// write vertices
+		ply->put_element_setup( "vertex" );
+		for( int i=0 ; i<nr_vertices ; i++ ) ply->put_element( (void*)&vertices[i] );
+
+		// write edges
+		if( nr_edges )
+		{
+			Edge ply_edge;
+			ply->put_element_setup( "edge" );
+			for( int i=0 ; i<nr_edges ; i++ )
+			{
+				ply_edge.v1 = (*edges)[i].first , ply_edge.v2 = (*edges)[i].second;
+				ply->put_element( (void*)&ply_edge );
+			}
+		}
+
+		// write faces
+		if( nr_faces )
+		{
+			Face< Index > ply_face;
+			int maxFaceVerts=3;
+			ply_face.nr_vertices = 3;
+			ply_face.vertices = new Index[3];
+
+			ply->put_element_setup( "face" );
+			for( int i=0 ; i<nr_faces ; i++ )
+			{
+				int face_size = (int)(*polygons)[i].size();
+				if( face_size>maxFaceVerts )
+				{
+					delete[] ply_face.vertices;
+					maxFaceVerts = face_size;
+					ply_face.vertices = new Index[face_size];
+				}
+				ply_face.nr_vertices = face_size;
+				for( unsigned int j=0 ; j<ply_face.nr_vertices ; j++ ) ply_face.vertices[j] = (*polygons)[i][j];
+				ply->put_element( (void*)&ply_face );
+			}
+			delete[] ply_face.vertices;
+		}
+		delete ply;
+	}
+
+	template< class VertexFactory >
+	void WriteVertices
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		const std::vector< typename VertexFactory::VertexType > &vertices ,
+		int file_type ,
+		const std::vector< std::string > *comments
+	)
+	{
+		int nr_vertices = int(vertices.size());
+		float version;
+		std::vector< std::string > elem_names = { std::string( "vertex" ) };
+		PlyFile *ply = PlyFile::Write( fileName , elem_names , file_type , version );
+		if( !ply ) THROW( "could not create write ply file: " , fileName );
+
+		//
+		// describe vertex and face properties
+		//
+		ply->element_count( "vertex", nr_vertices );
+		for( unsigned int i=0 ; i<vFactory.plyWriteNum() ; i++ )
+		{
+			PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticWriteProperty(i) : vFactory.plyWriteProperty(i);
+			ply->describe_property( "vertex" , &prop );
+		}
+
+		// Write in the comments
+		if( comments ) for( int i=0 ; i<comments->size() ; i++ ) ply->put_comment( (*comments)[i] );
+		ply->header_complete();
+
+		// write vertices
+		ply->put_element_setup( elem_names[0] );
+		for( int i=0 ; i<(int)vertices.size() ; i++ ) ply->put_element( (void *)&vertices[i] );
+
+		delete ply;
+	}
+
+	template< class VertexFactory , typename Index >
+	void WriteTriangles
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		const std::vector< typename VertexFactory::VertexType > &vertices ,
+		const std::vector< SimplexIndex< 2 , Index > > &triangles ,
+		int file_type ,
+		const std::vector< std::string > *comments
+	)
+	{
+		std::vector< std::vector< Index > > polygons( triangles.size() );
+		for( int i=0 ; i<triangles.size() ; i++ )
+		{
+			polygons[i].resize( 3 );
+			for( int j=0 ; j<3 ; j++ ) polygons[i][j] = triangles[i][j];
+		}
+		WritePolygons( fileName , vFactory , vertices , polygons , file_type , comments );
+	}
+
+	template< class VertexFactory , typename Index >
+	void WritePolygons
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		const std::vector< typename VertexFactory::VertexType > &vertices ,
+		const std::vector< std::vector< Index > > &polygons ,
+		int file_type ,
+		const std::vector< std::string > *comments
+	)
+	{
+		int nr_vertices = int(vertices.size());
+		int nr_faces = int(polygons.size());
+		float version;
+		std::vector< std::string > elem_names = { std::string( "vertex" ) , std::string( "face" ) };
+		PlyFile *ply = PlyFile::Write( fileName , elem_names , file_type , version );
+		if( !ply ) THROW( "could not create write ply file: " , fileName );
+
+		//
+		// describe vertex and face properties
+		//
+		ply->element_count( "vertex", nr_vertices );
+		for( unsigned int i=0 ; i<vFactory.plyWriteNum() ; i++)
+		{
+			PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticWriteProperty(i) : vFactory.plyWriteProperty(i);
+			ply->describe_property( "vertex" , &prop );
+		}
+		ply->element_count( "face" , nr_faces );
+		ply->describe_property( "face" , &Face< Index >::Properties[0] );
+
+		// Write in the comments
+		if( comments ) for( size_t i=0 ; i<comments->size() ; i++ ) ply->put_comment( (*comments)[i] );
+		ply->header_complete();
+
+		// write vertices
+		ply->put_element_setup( elem_names[0] );
+		char *buffer = new char[ vFactory.bufferSize() ];
+		for( size_t j=0 ; j<(int)vertices.size() ; j++ )
+		{
+			if( vFactory.isStaticallyAllocated() ) ply->put_element( (void *)&vertices[j] );
+			else
+			{
+				vFactory.toBuffer( vertices[j] , buffer );
+				ply->put_element( (void *)buffer );
+			}
+		}
+		delete[] buffer;
+
+		// write faces
+		Face< Index > ply_face;
+		int maxFaceVerts = 3;
+		ply_face.nr_vertices = maxFaceVerts;
+		ply_face.vertices = new Index[ maxFaceVerts ];
+
+		ply->put_element_setup( elem_names[1] );
 		for( int i=0 ; i<nr_faces ; i++ )
 		{
-			int face_size = (int)(*polygons)[i].size();
-			if( face_size>maxFaceVerts )
+			if( (int)polygons[i].size()>maxFaceVerts )
 			{
 				delete[] ply_face.vertices;
-				maxFaceVerts = face_size;
-				ply_face.vertices = new int[face_size];
+				maxFaceVerts = (int)polygons[i].size();
+				ply_face.vertices=new Index[ maxFaceVerts ];
 			}
-			ply_face.nr_vertices = face_size;
-			for( unsigned int j=0 ; j<ply_face.nr_vertices ; j++ ) ply_face.vertices[j] = (*polygons)[i][j];
-			ply_put_element( ply , (void*)&ply_face );
+			ply_face.nr_vertices = (int)polygons[i].size();
+			for( unsigned int j=0 ; j<ply_face.nr_vertices ; j++ ) ply_face.vertices[j] = polygons[i][j];
+			ply->put_element( (void *)&ply_face );
 		}
 		delete[] ply_face.vertices;
+		delete ply;
 	}
-	ply_close( ply );
-	return 1;
-}
-template< class Vertex >
-int PlyRead
+
+	template< class VertexFactory , typename Polygon >
+	void WritePolygons
 	(
-	const char* fileName ,
-	std::vector< Vertex >& vertices , 
-	std::vector< std::pair< int , int > >* edges ,
-	std::vector< std::vector< int > >* polygons ,
-	PlyProperty* vertexProperties , bool* vertexPropertiesFlag , int vertexPropertyNum ,
-	int& file_type ,
-	char*** comments , int* commentNum )
-{
-	int nr_elems;
-	char **elist;
-	float version;
-	int i,j,k;
-	PlyFile* ply;
-	char* elem_name;
-	int num_elems;
-	int nr_props;
-	PlyProperty** plist;
-	PlyFace ply_face;
-
-	ply = ply_open_for_reading( fileName , &nr_elems , &elist , &file_type , &version );
-	if( !ply ) return 0;
-
-	if( comments )
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		const std::vector< typename VertexFactory::VertexType > &vertices ,
+		const std::vector< Polygon > &polygons ,
+		PlyProperty* polygonProperties , int polygonPropertyNum ,
+		int file_type ,
+		const std::vector< std::string > *comments
+	)
 	{
-		(*comments) = new char*[*commentNum+ply->num_comments];
-		for(int i=0;i<ply->num_comments;i++) (*comments)[i]=_strdup(ply->comments[i]);
-		*commentNum=ply->num_comments;
+		int nr_vertices = int(vertices.size());
+		int nr_faces = int(polygons.size());
+		float version;
+		std::vector< std::string > elem_names = { std::string( "vertex" ) , std::string( "face" ) };
+		PlyFile *ply = PlyFile::Write( fileName , elem_names , file_type , version );
+		if( !ply ) THROW( "could not create write ply file: " , fileName );
+
+		//
+		// describe vertex and face properties
+		//
+		ply->element_count( "vertex", nr_vertices );
+		for( unsigned int i=0 ; i<vFactory.plyWriteNum() ; i++)
+		{
+			PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticWriteProperty(i) : vFactory.plyWriteProperty(i);
+			ply->describe_property( "vertex" , &prop );
+		}
+		ply->element_count( "face" , nr_faces );
+		for( unsigned int i=0 ; i<(unsigned int)polygonPropertyNum ; i++ ) ply->describe_property( "face" , polygonProperties + i );
+
+		// Write in the comments
+		if( comments ) for( size_t i=0 ; i<comments->size() ; i++ ) ply->put_comment( (*comments)[i] );
+		ply->header_complete();
+
+		// write vertices
+		ply->put_element_setup( elem_names[0] );
+		char *buffer = new char[ vFactory.bufferSize() ];
+		for( size_t j=0 ; j<(int)vertices.size() ; j++ )
+		{
+			if( vFactory.isStaticallyAllocated() ) ply->put_element( (void *)&vertices[j] );
+			else
+			{
+				vFactory.toBuffer( vertices[j] , buffer );
+				ply->put_element( (void *)buffer );
+			}
+		}
+		delete[] buffer;
+
+		// write faces
+		ply->put_element_setup( elem_names[1] );
+		for( int i=0 ; i<nr_faces ; i++ ) ply->put_element( (void *)&polygons[i] );
+		delete ply;
 	}
 
-
-	for( i=0 ; i<nr_elems; i++ )
-	{
-		elem_name = elist[i];
-		plist = ply_get_element_description( ply , elem_name , &num_elems , &nr_props );
-
-		if( !plist )
+		template< class VertexFactory >
+		void WritePoints
+		(
+			std::string fileName ,
+			const VertexFactory &vFactory ,
+			const std::vector< typename VertexFactory::VertexType > &vertices ,
+			int file_type ,
+			const std::vector< std::string > *comments=NULL
+		)
 		{
-			for( i=0 ; i<nr_elems ; i++ )
+			int nr_vertices = int(vertices.size());
+			float version;
+			std::vector< std::string > elem_names = { std::string( "vertex" ) };
+			PlyFile *ply = PlyFile::Write( fileName , elem_names , file_type , version );
+			if( !ply ) THROW( "could not create write ply file: " , fileName );
+
+			//
+			// describe vertex and face properties
+			//
+			ply->element_count( "vertex", nr_vertices );
+			for( unsigned int i=0 ; i<vFactory.plyWriteNum() ; i++)
 			{
-				free( ply->elems[i]->name );
-				free( ply->elems[i]->store_prop );
-				for( j=0 ; j<ply->elems[i]->nprops ; j++ )
+				PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticWriteProperty(i) : vFactory.plyWriteProperty(i);
+				ply->describe_property( "vertex" , &prop );
+			}
+
+			// Write in the comments
+			if( comments ) for( size_t i=0 ; i<comments->size() ; i++ ) ply->put_comment( (*comments)[i] );
+			ply->header_complete();
+
+			// write vertices
+			ply->put_element_setup( elem_names[0] );
+			char *buffer = new char[ vFactory.bufferSize() ];
+			for( size_t j=0 ; j<(int)vertices.size() ; j++ )
+			{
+				if( vFactory.isStaticallyAllocated() ) ply->put_element( (void *)&vertices[j] );
+				else
 				{
-					free( ply->elems[i]->props[j]->name );
-					free( ply->elems[i]->props[j] );
+					vFactory.toBuffer( vertices[j] , buffer );
+					ply->put_element( (void *)buffer );
 				}
-				free( ply->elems[i]->props );
 			}
-			for( i=0 ; i<nr_elems ; i++ ) free(ply->elems[i]);
-			free( ply->elems );
-			for( i=0 ; i<ply->num_comments ; i++ ) free( ply->comments[i] );
-			free( ply->comments );
-			for( i=0 ; i<ply->num_obj_info ; i++ ) free(ply->obj_info[i]);
-			free( ply->obj_info );
-			ply_free_other_elements( ply->other_elems );
-			
-			for( i=0 ; i<nr_elems ; i++ ) free(elist[i]);
-			free( elist );
-			ply_close( ply );
-			return 0;
+			delete[] buffer;
+			delete ply;
 		}
-		if( equal_strings( "vertex" , elem_name ) )
-		{
-			for( int i=0 ; i<vertexPropertyNum ; i++ )
-			{
-				bool hasProperty = ply_get_property( ply , elem_name , &vertexProperties[i] );
-				if( vertexPropertiesFlag ) vertexPropertiesFlag[i] = hasProperty;
-			}
-			vertices.resize( num_elems );
-			for( j=0 ; j<num_elems ; j++ ) ply_get_element( ply , (void*)&vertices[j] );
-		}
-		else if( equal_strings( "edge" , elem_name ) && edges )
-		{
-			ply_get_property( ply , elem_name , &edge_props[0] );
-			ply_get_property( ply , elem_name , &edge_props[1] );
-			edges->resize( num_elems );
-			for( j=0 ; j<num_elems ; j++ )
-			{
-				PlyEdge ply_edge;
-				ply_get_element( ply , (void*)&ply_edge );
-				(*edges)[j].first = ply_edge.v1 , (*edges)[j].second = ply_edge.v2;
-			}
-		}
-		else if( equal_strings( "face" , elem_name ) && polygons )
-		{
-			ply_get_property( ply , elem_name , &face_props[0] );
-			polygons->resize( num_elems );
-			for( j=0 ; j<num_elems ; j++ )
-			{
-				ply_get_element( ply , (void*)&ply_face );
-				(*polygons)[j].resize( ply_face.nr_vertices );
-				for( k=0 ; k<(int)ply_face.nr_vertices ; k++ ) (*polygons)[j][k] = ply_face.vertices[k];
-				delete[] ply_face.vertices;
-			}  // for, read faces
-		}  // if face
-		else if( equal_strings( "tristrips" , elem_name ) && polygons )
-		{
-			PlyStrip ply_strip;
-			for( int j=0 ; j<num_elems ; j++ )
-			{
-				ply_get_property( ply , elem_name , &strip_props[0] );
-				ply_get_element( ply , (void *) &ply_strip );
-				int idx = 0;
-				for( unsigned int k=0 ; k<ply_strip.nr_vertices - 2 ; k++ )
-				{
-					int i0 = ply_strip.vertices[k+0];
-					int i1 = ply_strip.vertices[k+1];
-					int i2 = ply_strip.vertices[k+2];
-					if( i0>=0 && i1>=0 && i2>=0 )
-					{
-						size_t sz = polygons->size();
-						polygons->resize( sz + 1 );
-						(*polygons)[sz].resize( 3 );
-						if( !(idx&1 ) )
-						{
-							(*polygons)[sz][0] = i0;
-							(*polygons)[sz][1] = i1;
-							(*polygons)[sz][2] = i2;
-						}
-						else
-						{
-							(*polygons)[sz][1] = i0;
-							(*polygons)[sz][0] = i1;
-							(*polygons)[sz][2] = i2;
-						}
-						idx++;
-//						(*polygons)[sz][0] = i0;
-//						(*polygons)[sz][1] = i1;
-//						(*polygons)[sz][2] = i2;
-					}
-				}
-				delete[] ply_strip.vertices;
-			}  // for, read triangle strips
-		}
-		else ply_get_other_element( ply , elem_name , num_elems );
 
-		for( j=0 ; j<nr_props ; j++ ) free( plist[j]->name ) , free( plist[j] );
-
-		free( plist );
-	}  // for each type of element
-	
-	for( i=0 ; i<nr_elems ; i++ )
+	template< class VertexFactory , typename Index >
+	void WriteTetrahedra
+	(
+		std::string fileName ,
+		const VertexFactory &vFactory ,
+		const std::vector< typename VertexFactory::VertexType > &vertices ,
+		const std::vector< SimplexIndex< 3 , Index > > &tetrahedra ,
+		int file_type ,
+		const std::vector< std::string > *comments
+	)
 	{
-		free( ply->elems[i]->name );
-		free( ply->elems[i]->store_prop );
-		for( j=0 ; j<ply->elems[i]->nprops ; j++ ) free( ply->elems[i]->props[j]->name ) , free( ply->elems[i]->props[j] );
-		if( ply->elems[i]->props && ply->elems[i]->nprops ) free(ply->elems[i]->props);
-	}
-	for( i=0 ; i<nr_elems ; i++ ) free( ply->elems[i] );
-	free( ply->elems );
-	for( i=0 ; i<ply->num_comments ; i++ ) free( ply->comments[i] );
-	free( ply->comments );
-	for( i=0 ; i<ply->num_obj_info ; i++ ) free( ply->obj_info[i] );
-	free( ply->obj_info );
-	ply_free_other_elements( ply->other_elems );
-	
-	
-	for( i=0 ; i<nr_elems ; i++ ) free( elist[i] );
-	free( elist );
-	ply_close( ply );
-	return 1;
-}
-
-
-template<class Vertex>
-int PlyWritePolygons( const char* fileName,
-					  const std::vector<Vertex>& vertices,const std::vector< std::vector<int> >& polygons,
-					  PlyProperty* vertexProperties , int vertexPropertyNum ,
-					  int file_type,
-					  char** comments,const int& commentNum)
-{
-	int nr_vertices=int(vertices.size());
-	int nr_faces=int(polygons.size());
-	float version;
-	PlyFile *ply = ply_open_for_writing(fileName, 2, elem_names, file_type, &version);
-	if (!ply){return 0;}
-	
-	//
-	// describe vertex and face properties
-	//
-	ply_element_count(ply, "vertex", nr_vertices);
-	for(int i=0;i<vertexPropertyNum;i++)
-		ply_describe_property(ply, "vertex", &vertexProperties[i]);
-	
-	ply_element_count(ply, "face", nr_faces);
-	ply_describe_property(ply, "face", &face_props[0]);
-	
-	// Write in the comments
-	if(comments && commentNum)
-		for(int i=0;i<commentNum;i++)
-			ply_put_comment(ply,comments[i]);
-
-	ply_header_complete(ply);
-	
-	// write vertices
-	ply_put_element_setup(ply, "vertex");
-	for (int i=0; i < int(vertices.size()); i++)
-		ply_put_element(ply, (void *) &vertices[i]);
-
-	// write faces
-	PlyFace ply_face;
-	int maxFaceVerts=3;
-	ply_face.nr_vertices = 3;
-	ply_face.vertices = new int[3];
-
-	ply_put_element_setup(ply, "face");
-	for (int i=0; i < nr_faces; i++)
-	{
-		if(int(polygons[i].size())>maxFaceVerts)
+		std::vector< std::vector< Index > > polygons( tetrahedra.size() );
+		for( int i=0 ; i<tetrahedra.size() ; i++ )
 		{
-			delete[] ply_face.vertices;
-			maxFaceVerts=int(polygons[i].size());
-			ply_face.vertices=new int[maxFaceVerts];
+			polygons[i].resize( 4 );
+			for( int j=0 ; j<4 ; j++ ) polygons[i][j] = tetrahedra[i][j];
 		}
-		ply_face.nr_vertices=int(polygons[i].size());
-		for( unsigned int j=0 ; j<ply_face.nr_vertices ; j++ ) ply_face.vertices[j]=polygons[i][j];
-		ply_put_element(ply, (void *) &ply_face);
+		WritePolygons( fileName , vFactory , vertices , polygons , file_type , comments );
 	}
 
-	delete[] ply_face.vertices;
-	ply_close(ply);
-	return 1;
-}
-
-template< class Vertex , class Polygon >
-int PlyWritePolygons( const char* fileName ,
-					  const std::vector< Vertex >& vertices , const std::vector< Polygon >& polygons,
-					  PlyProperty*  vertexProperties , int  vertexPropertyNum ,
-					  PlyProperty* polygonProperties , int polygonPropertyNum ,
-					  int file_type,
-					  char** comments,const int& commentNum)
-{
-	float version;
-	PlyFile *ply = ply_open_for_writing( fileName , 2 , elem_names , file_type , &version );
-	if( !ply ) return 0;
-	
-	//
-	// describe vertex and face properties
-	//
-	ply_element_count( ply , "vertex" , (int)vertices.size() );
-	for( int i=0 ; i<vertexPropertyNum ; i++ ) ply_describe_property( ply , "vertex" , &vertexProperties[i] );
-	
-	ply_element_count( ply, "face", (int)polygons.size() );
-	for( int i=0 ; i<polygonPropertyNum ; i++ ) ply_describe_property( ply , "face" , &polygonProperties[i] );
-	
-	// Write in the comments
-	if( comments && commentNum ) for( int i=0 ; i<commentNum ; i++ ) ply_put_comment( ply , comments[i] );
-
-	ply_header_complete( ply );
-	
-	// write vertices
-	ply_put_element_setup( ply , "vertex" );
-	for( int i=0 ; i<(int)vertices.size() ; i++ ) ply_put_element( ply , (void *) &vertices[i] );
-
-	// write faces
-	ply_put_element_setup( ply , "face" );
-	for( int i=0 ; i<(int)polygons.size() ; i++ ) ply_put_element( ply , (void *) &polygons[i] );
-
-	ply_close( ply );
-	return 1;
-}
-
-
-template<class Vertex>
-int PlyWritePolygonsAndColor( const char* fileName,
-					 const std::vector<Vertex>& vertices,const std::vector< std::vector<int> >& polygons,
-					 PlyProperty* vertexProperties,int vertexPropertyNum,
-					 int file_type,
-					 char** comments,const int& commentNum)
-{
-	int nr_vertices=int(vertices.size());
-	int nr_faces=int(polygons.size());
-	float version;
-	PlyFile *ply = ply_open_for_writing(fileName, 2, elem_names, file_type, &version);
-	if (!ply){return 0;}
-	
-	//
-	// describe vertex and face properties
-	//
-	ply_element_count(ply, "vertex", nr_vertices);
-	for(int i=0;i<vertexPropertyNum;i++)
-		ply_describe_property(ply, "vertex", &vertexProperties[i]);
-	
-	ply_element_count(ply, "face", nr_faces);
-	ply_describe_property(ply, "face", &face_props[0]);
-	
-	// Write in the comments
-	if(comments && commentNum)
-		for(int i=0;i<commentNum;i++)
-			ply_put_comment(ply,comments[i]);
-
-	ply_header_complete(ply);
-	
-	// write vertices
-	ply_put_element_setup(ply, "vertex");
-	for (int i=0; i < int(vertices.size()); i++)
-		ply_put_element(ply, (void *) &vertices[i]);
-
-	// write faces
-	PlyFace ply_face;
-	int maxFaceVerts=3;
-	ply_face.nr_vertices = 3;
-	ply_face.vertices = new int[3];
-
-	ply_put_element_setup(ply, "face");
-	for (int i=0; i < nr_faces; i++)
-	{
-		if(int(polygons[i].size())>maxFaceVerts)
-		{
-			delete[] ply_face.vertices;
-			maxFaceVerts=int(polygons[i].size());
-			ply_face.vertices=new int[maxFaceVerts];
-		}
-		ply_face.nr_vertices=int(polygons[i].size());
-		for(int j=0;j<ply_face.nr_vertices;j++)
-			ply_face.vertices[j]=polygons[i][j];
-		ply_put_element(ply, (void *) &ply_face);
-	}
-
-	delete[] ply_face.vertices;
-	ply_close(ply);
-	return 1;
-}
-
-template< class Vertex >
-int PlyReadPolygons( const char* fileName,
-					std::vector< Vertex >& vertices , std::vector< std::vector< int > >& polygons,
-					 PlyProperty* vertexProperties , bool* vertexPropertiesFlag , int vertexPropertyNum,
-					int& file_type,
-					char*** comments,int* commentNum)
-{
-	int nr_elems;
-	char **elist;
-	float version;
-	int i,j,k;
-	PlyFile* ply;
-	char* elem_name;
-	int num_elems;
-	int nr_props;
-	PlyProperty** plist;
-	PlyFace ply_face;
-
-	ply = ply_open_for_reading( fileName , &nr_elems , &elist , &file_type , &version);
-	if(!ply) return 0;
-
-	if( comments )
-	{
-		(*comments) = new char*[*commentNum+ply->num_comments];
-		for( int i=0 ; i<ply->num_comments ; i++ ) (*comments)[i]=_strdup(ply->comments[i]);
-		*commentNum=ply->num_comments;
-	}
-
-	for (i=0; i < nr_elems; i++)
-	{
-		elem_name = elist[i];
-		plist = ply_get_element_description(ply, elem_name, &num_elems, &nr_props);
-		if(!plist)
-		{
-			for(i=0;i<nr_elems;i++){
-				free(ply->elems[i]->name);
-				free(ply->elems[i]->store_prop);
-				for(j=0;j<ply->elems[i]->nprops;j++){
-					free(ply->elems[i]->props[j]->name);
-					free(ply->elems[i]->props[j]);
-				}
-				free(ply->elems[i]->props);
-			}
-			for(i=0;i<nr_elems;i++){free(ply->elems[i]);}
-			free(ply->elems);
-			for(i=0;i<ply->num_comments;i++){free(ply->comments[i]);}
-			free(ply->comments);
-			for(i=0;i<ply->num_obj_info;i++){free(ply->obj_info[i]);}
-			free(ply->obj_info);
-			ply_free_other_elements (ply->other_elems);
-			
-			for(i=0;i<nr_elems;i++){free(elist[i]);}
-			free(elist);
-			ply_close(ply);
-			return 0;
-		}		
-		if (equal_strings("vertex", elem_name))
-		{
-			for(int i=0;i<vertexPropertyNum;i++)
-			{
-				bool hasProperty = ply_get_property( ply , elem_name , &vertexProperties[i] );
-				if( vertexPropertiesFlag ) vertexPropertiesFlag[i] = hasProperty;
-			}
-			vertices.resize(num_elems);
-			for (j=0; j < num_elems; j++)	ply_get_element (ply, (void *) &vertices[j]);
-		}
-		else if( equal_strings( "face" , elem_name ) )
-		{
-			ply_get_property( ply , elem_name, &face_props[0] );
-			polygons.resize( num_elems );
-			for( j=0 ; j<num_elems ; j++ )
-			{
-				ply_get_element( ply, (void *) &ply_face );
-				polygons[j].resize( ply_face.nr_vertices );
-				for( k=0 ; k<(int)ply_face.nr_vertices ; k++ ) polygons[j][k] = ply_face.vertices[k];
-				delete[] ply_face.vertices;
-			}  // for, read faces
-		}  // if face
-		else if ( equal_strings( "tristrips" , elem_name ) )
-		{
-			PlyStrip ply_strip;
-			for( int j=0 ; j<num_elems ; j++ )
-			{
-				ply_get_property( ply , elem_name , &strip_props[0] );
-				ply_get_element( ply , (void *) &ply_strip );
-				int idx = 0;
-				for( unsigned int k=0 ; k<ply_strip.nr_vertices - 2 ; k++ )
-				{
-					int i0 = ply_strip.vertices[k+0];
-					int i1 = ply_strip.vertices[k+1];
-					int i2 = ply_strip.vertices[k+2];
-					if( i0>=0 && i1>=0 && i2>=0 )
-					{
-						size_t sz = polygons.size();
-						polygons.resize( sz + 1 );
-						polygons[sz].resize( 3 );
-						if( !(idx&1 ) )
-						{
-							polygons[sz][0] = i0;
-							polygons[sz][1] = i1;
-							polygons[sz][2] = i2;
-						}
-						else
-						{
-							polygons[sz][1] = i0;
-							polygons[sz][0] = i1;
-							polygons[sz][2] = i2;
-						}
-						idx++;
-//						polygons[sz][0] = i0;
-//						polygons[sz][1] = i1;
-//						polygons[sz][2] = i2;
-					}
-				}
-				delete[] ply_strip.vertices;
-			}  // for, read triangle strips
-		}
-		else{ply_get_other_element (ply, elem_name, num_elems);}
-
-		for(j=0;j<nr_props;j++){
-			free(plist[j]->name);
-			free(plist[j]);
-		}
-		free(plist);
-	}  // for each type of element
-	for(i=0;i<nr_elems;i++){
-		free(ply->elems[i]->name);
-		free(ply->elems[i]->store_prop);
-		for(j=0;j<ply->elems[i]->nprops;j++){
-			free(ply->elems[i]->props[j]->name);
-			free(ply->elems[i]->props[j]);
-		}
-		if(ply->elems[i]->props && ply->elems[i]->nprops){free(ply->elems[i]->props);}
-	}
-	for(i=0;i<nr_elems;i++){free(ply->elems[i]);}
-	free(ply->elems);
-	for(i=0;i<ply->num_comments;i++){free(ply->comments[i]);}
-	free(ply->comments);
-	for(i=0;i<ply->num_obj_info;i++){free(ply->obj_info[i]);}
-	free(ply->obj_info);
-	ply_free_other_elements (ply->other_elems);
-	
-	
-	for(i=0;i<nr_elems;i++){free(elist[i]);}
-	free(elist);
-	ply_close(ply);
-	return 1;
-}
-
-template< class Vertex , class Polygon >
-int PlyReadPolygons( const char* fileName,
-					 std::vector< Vertex >& vertices , std::vector< Polygon >& polygons ,
-					 PlyProperty*  vertexProperties , bool*  vertexPropertyFlags , int  vertexPropertyNum ,
-					 PlyProperty* polygonProperties , bool* polygonPropertyFlags , int polygonPropertyNum ,
-					 int& file_type,
-					 char*** comments , int* commentNum )
-{
-	int nr_elems;
-	char **elist;
-	float version;
-	int i,j;
-	PlyFile* ply;
-	char* elem_name;
-	int num_elems;
-	int nr_props;
-	PlyProperty** plist;
-
-	ply = ply_open_for_reading( fileName , &nr_elems , &elist , &file_type , &version);
-	if( !ply ) return 0;
-
-	if( comments )
-	{
-		(*comments) = new char*[*commentNum+ply->num_comments];
-		for( int i=0 ; i<ply->num_comments ; i++ ) (*comments)[i]=_strdup(ply->comments[i]);
-		*commentNum=ply->num_comments;
-	}
-
-	for( int i=0 ; i<nr_elems ; i++ )
-	{
-		elem_name = elist[i];
-		plist = ply_get_element_description( ply , elem_name , &num_elems , &nr_props );
-		if( !plist )
-		{
-			for( i=0 ; i<nr_elems ; i++ )
-			{
-				free( ply->elems[i]->name );
-				free( ply->elems[i]->store_prop );
-				for( int j=0 ; j<ply->elems[i]->nprops ; j++ )
-				{
-					free( ply->elems[i]->props[j]->name );
-					free( ply->elems[i]->props[j] );
-				}
-				free( ply->elems[i]->props );
-			}
-			for(i=0;i<nr_elems;i++){free(ply->elems[i]);}
-			free(ply->elems);
-			for(i=0;i<ply->num_comments;i++){free(ply->comments[i]);}
-			free(ply->comments);
-			for(i=0;i<ply->num_obj_info;i++){free(ply->obj_info[i]);}
-			free(ply->obj_info);
-			ply_free_other_elements (ply->other_elems);
-			
-			for(i=0;i<nr_elems;i++){free(elist[i]);}
-			free(elist);
-			ply_close(ply);
-			return 0;
-		}		
-		if( equal_strings( "vertex" , elem_name ) )
-		{
-			for( int j=0 ; j<vertexPropertyNum ; j++ )
-			{
-				bool hasProperty = ply_get_property( ply , elem_name , &vertexProperties[j] );
-				if( vertexPropertyFlags ) vertexPropertyFlags[j] = hasProperty;
-			}
-			vertices.resize(num_elems);
-			for( int j=0 ; j<num_elems ; j++ ) ply_get_element( ply, (void*)&vertices[j] );
-		}
-		else if( equal_strings( "face" , elem_name ) )
-		{
-			for( int j=0 ; j<polygonPropertyNum ; j++ )
-			{
-				bool hasProperty = ply_get_property( ply , elem_name , &polygonProperties[j] );
-				if( polygonPropertyFlags ) polygonPropertyFlags[j] = hasProperty;
-			}
-			polygons.resize( num_elems );
-			for( int j=0 ; j<num_elems ; j++ ) ply_get_element( ply, (void*)&polygons[j] );
-		}  // if face
-		else ply_get_other_element (ply, elem_name, num_elems);
-
-		for( int j=0 ; j<nr_props ; j++ )
-		{
-			free( plist[j]->name );
-			free( plist[j] );
-		}
-		free( plist );
-	}  // for each type of element
-	
-	for(i=0;i<nr_elems;i++){
-		free(ply->elems[i]->name);
-		free(ply->elems[i]->store_prop);
-		for(j=0;j<ply->elems[i]->nprops;j++){
-			free(ply->elems[i]->props[j]->name);
-			free(ply->elems[i]->props[j]);
-		}
-		if(ply->elems[i]->props && ply->elems[i]->nprops){free(ply->elems[i]->props);}
-	}
-	for(i=0;i<nr_elems;i++){free(ply->elems[i]);}
-	free(ply->elems);
-	for(i=0;i<ply->num_comments;i++){free(ply->comments[i]);}
-	free(ply->comments);
-	for(i=0;i<ply->num_obj_info;i++){free(ply->obj_info[i]);}
-	free(ply->obj_info);
-	ply_free_other_elements (ply->other_elems);
-	
-	
-	for(i=0;i<nr_elems;i++){free(elist[i]);}
-	free(elist);
-	ply_close(ply);
-	return 1;
-}
-
-
-template<class Vertex>
-int PlyReadPoints( const char* fileName,
-				  std::vector<Vertex>& vertices,
-				  PlyProperty* vertexProperties, bool* vertexPropertiesFlag , int vertexPropertyNum,
-				  int& file_type,
-				  char*** comments,int* commentNum)
-{
-	int nr_elems;
-	char **elist;
-	float version;
-	int i,j;
-	PlyFile* ply;
-	char* elem_name;
-	int num_elems;
-	int nr_props;
-	PlyProperty** plist;
-	PlyFace ply_face;
-
-	ply = ply_open_for_reading(fileName, &nr_elems, &elist, &file_type, &version);
-	if(!ply) return 0;
-
-	if(comments)
-	{
-		(*comments)=new char*[*commentNum+ply->num_comments];
-		for(int i=0;i<ply->num_comments;i++) (*comments)[i]=_strdup(ply->comments[i]);
-		*commentNum=ply->num_comments;
-	}
-
-	for (i=0; i < nr_elems; i++) {
-		elem_name = elist[i];
-		plist = ply_get_element_description(ply, elem_name, &num_elems, &nr_props);
-		if(!plist)
-		{
-			for(i=0;i<nr_elems;i++){
-				free(ply->elems[i]->name);
-				free(ply->elems[i]->store_prop);
-				for(j=0;j<ply->elems[i]->nprops;j++){
-					free(ply->elems[i]->props[j]->name);
-					free(ply->elems[i]->props[j]);
-				}
-				free(ply->elems[i]->props);
-			}
-			for(i=0;i<nr_elems;i++){free(ply->elems[i]);}
-			free(ply->elems);
-			for(i=0;i<ply->num_comments;i++){free(ply->comments[i]);}
-			free(ply->comments);
-			for(i=0;i<ply->num_obj_info;i++){free(ply->obj_info[i]);}
-			free(ply->obj_info);
-			ply_free_other_elements (ply->other_elems);
-			
-			for(i=0;i<nr_elems;i++){free(elist[i]);}
-			free(elist);
-			ply_close(ply);
-			return 0;
-		}		
-		if (equal_strings("vertex", elem_name))
-		{
-			for(int i=0;i<vertexPropertyNum;i++)
-			{
-				bool hasProperty = ply_get_property( ply , elem_name,&vertexProperties[i] );
-				if( vertexPropertiesFlag ) vertexPropertiesFlag[i] = hasProperty;
-			}
-			vertices.resize(num_elems);
-			for (j=0; j < num_elems; j++)	ply_get_element (ply, (void *) &vertices[j]);
-		}
-		else{ply_get_other_element (ply, elem_name, num_elems);}
-
-		for(j=0;j<nr_props;j++){
-			free(plist[j]->name);
-			free(plist[j]);
-		}
-		free(plist);
-	}  // for each type of element
-	
-	for(i=0;i<nr_elems;i++){
-		free(ply->elems[i]->name);
-		free(ply->elems[i]->store_prop);
-		for(j=0;j<ply->elems[i]->nprops;j++){
-			free(ply->elems[i]->props[j]->name);
-			free(ply->elems[i]->props[j]);
-		}
-		if(ply->elems[i]->props && ply->elems[i]->nprops){free(ply->elems[i]->props);}
-	}
-	for(i=0;i<nr_elems;i++){free(ply->elems[i]);}
-	free(ply->elems);
-	for(i=0;i<ply->num_comments;i++){free(ply->comments[i]);}
-	free(ply->comments);
-	for(i=0;i<ply->num_obj_info;i++){free(ply->obj_info[i]);}
-	free(ply->obj_info);
-	ply_free_other_elements (ply->other_elems);
-	
-	
-	for(i=0;i<nr_elems;i++){free(elist[i]);}
-	free(elist);
-	ply_close(ply);
-	return 1;
-}
-template<class Vertex>
-int PlyWritePoints( const char* fileName,
-				   const std::vector<Vertex>& vertices,
-				   PlyProperty* vertexProperties,int vertexPropertyNum,
-				   int file_type,
-				   char** comments,const int& commentNum)
-{
-	int nr_vertices=int(vertices.size());
-	float version;
-	PlyFile *ply = ply_open_for_writing(fileName, 2, elem_names, file_type, &version);
-	if (!ply){return 0;}
-	
-	//
-	// describe vertex and face properties
-	//
-	ply_element_count(ply, "vertex", nr_vertices);
-	for(int i=0;i<vertexPropertyNum;i++)	ply_describe_property(ply, "vertex", &vertexProperties[i]);
-		
-	// Write in the comments
-	if(comments && commentNum)
-		for(int i=0;i<commentNum;i++)
-			ply_put_comment(ply,comments[i]);
-
-	ply_header_complete(ply);
-	
-	// write vertices
-	ply_put_element_setup(ply, "vertex");
-	for (int i=0; i < int(vertices.size()); i++)	ply_put_element(ply, (void *) &vertices[i]);
-
-	ply_close(ply);
-	return 1;
-}
-
-
-template< class Vertex >
-int PlyReadTriangles( const char* fileName ,
-					  std::vector<Vertex>& vertices , std::vector< TriangleIndex >& triangles ,
-					  PlyProperty* vertexProperties , bool* vertexPropertiesFlag , int vertexPropertyNum ,
-					  int& file_type ,
-					  char*** comments , int* commentNum )
-{
-	MinimalAreaTriangulation< double > MAT;
-	std::vector< std::vector< int > > polygons;
-	int ret = PlyReadPolygons( fileName , vertices , polygons , vertexProperties , vertexPropertiesFlag , vertexPropertyNum , file_type , comments , commentNum );
-	std::vector< Point3D< double > > poly;
-	std::vector< TriangleIndex > tris;
-
-	triangles.clear();
-	for (unsigned int i = 0; i < polygons.size(); i++) {
-		poly.resize( polygons[i].size( ) );
-		for(unsigned int j=0 ; j<polygons[i].size(); j++) poly[j] = Point3D<double>( vertices[polygons[i][j]] );
-		MAT.GetTriangulation( poly , tris );
-		for (unsigned int j = 0; j < tris.size(); j++)   {
-			TriangleIndex tri;
-			tri[0] = polygons[i][ tris[j][0] ];
-			tri[1] = polygons[i][ tris[j][1] ];
-			tri[2] = polygons[i][ tris[j][2] ];
-			triangles.push_back( tri );
-		}
-	}
-	return ret;
-}
-template< class Vertex >
-int PlyWriteTriangles( const char* fileName ,
-					   const std::vector< Vertex >& vertices , const std::vector< TriangleIndex >& triangles ,
-					   PlyProperty* vertexProperties , int vertexPropertyNum ,
-					   int file_type ,
-					   char** comments , const int& commentNum)
-{
-#if 0
-	std::vector< std::vector< int > > polygons;
-	polygons.resize( triangles.size() );
-	for( int i=0 ; i<triangles.size() ; i++ )
-	{
-		polygons[i].resize( 3 );
-		for( int j=0 ; j<3 ; j++ ) polygons[i][j] = triangles[i][j];
-	}
-#else
-	int nr_vertices=int( vertices.size() );
-	int nr_faces=int( triangles.size() );
-	float version;
-	PlyFile *ply = ply_open_for_writing( fileName , 2 , elem_names , file_type , &version );
-	if ( !ply ) return 0;
-	
-	ply_element_count( ply , "vertex" , nr_vertices );
-	for( int i=0 ; i<vertexPropertyNum ; i++ ) ply_describe_property( ply , "vertex" , &vertexProperties[i] );
-	
-	ply_element_count( ply , "face" , nr_faces );
-	ply_describe_property( ply , "face" , &face_props[0] );
-	
-	// Write in the comments
-	if( comments && commentNum ) for( int i=0 ; i<commentNum ; i++ ) ply_put_comment( ply , comments[i] );
-
-	ply_header_complete(ply);
-	
-	// write vertices
-	ply_put_element_setup( ply , "vertex" );
-	for(unsigned int i=0 ; i<vertices.size() ; i++ ) ply_put_element( ply , (void *) &vertices[i] );
-
-	// write faces
-	PlyFace ply_face;
-	ply_face.nr_vertices = 3;
-	ply_face.vertices = new int[3];
-
-	ply_put_element_setup( ply , "face" );
-	for (int i=0; i < nr_faces; i++)
-	{
-		ply_face.nr_vertices = 3;
-		for( int j=0 ;j<3; j++ ) ply_face.vertices[j] = triangles[i][j];
-		ply_put_element( ply, (void *) &ply_face );
-	}
-
-	delete[] ply_face.vertices;
-	ply_close( ply );
-	return 1;
-#endif
-}
-template< class Vertex >
-int PlyWriteColorTriangles
-(
-const char* fileName ,
-const std::vector< Vertex >& vertices , const std::vector< std::pair< TriangleIndex , Point3D< float > > >& triangles ,
-PlyProperty* vertexProperties , int vertexPropertyNum ,
-int file_type ,
-char** comments , const int& commentNum
-)
-{
-	int nr_vertices=int( vertices.size() );
-	int nr_faces=int( triangles.size() );
-	float version;
-	PlyFile *ply = ply_open_for_writing( fileName , 2 , elem_names , file_type , &version );
-	if ( !ply ) return 0;
-	
-	ply_element_count( ply , "vertex" , nr_vertices );
-	for( int i=0 ; i<vertexPropertyNum ; i++ ) ply_describe_property( ply , "vertex" , &vertexProperties[i] );
-	
-	ply_element_count( ply , "face" , nr_faces );
-	for( int i=0 ; i<4 ; i++ ) ply_describe_property( ply , "face" , &color_face_props[i] );
-	
-	// Write in the comments
-	if( comments && commentNum ) for( int i=0 ; i<commentNum ; i++ ) ply_put_comment( ply , comments[i] );
-
-	ply_header_complete( ply );
-	
-	// write vertices
-	ply_put_element_setup( ply , "vertex" );
-	for(unsigned int i=0 ; i<vertices.size() ; i++ ) ply_put_element( ply , (void *) &vertices[i] );
-
-	// write faces
-	PlyColorFace ply_face;
-	ply_face.nr_vertices = 3;
-	ply_face.vertices = new int[3];
-
-	ply_put_element_setup( ply , "face" );
-	for ( int i=0 ; i < nr_faces ; i++ )
-	{
-		ply_face.nr_vertices = 3;
-		for( int j=0 ; j< 3; j++ ) ply_face.vertices[j] = triangles[i].first[j];
-		ply_face.r = triangles[i].second[0];
-		ply_face.g = triangles[i].second[1];
-		ply_face.b = triangles[i].second[2];
-		ply_put_element( ply, (void *) &ply_face );
-	}
-
-	delete[] ply_face.vertices;
-	ply_close( ply );
-	return 1;
-}
-
-template< class Vertex >
-int MReadTriangles( const char* fileName , std::vector<Vertex>& vertices , std::vector< TriangleIndex >& triangles )
-{
-	char line[2048];
-	FILE* fp = fopen( fileName , "r" );
-	if( !fp ) return 0;
-
-	std::unordered_map< int , int > vMap;
-	while( fgets( line , 2047 , fp ) )
-	{
-		Vertex v;
-		int idx , v1 , v2 , v3;
-		double x , y , z;
-		if( sscanf( line , "Vertex %d %lf %lf %lf" , &idx , &x , &y , &z )==4 )
-		{
-			v.point[0] = x , v.point[1] = y , v.point[2] = z;
-			vMap[idx] = vertices.size();
-			vertices.push_back( v );
-		}
-		else if( sscanf( line , "Face %d %d %d %d" , &idx , &v1 , &v2 , &v3 )==4 )
-		{
-			TriangleIndex tri;
-			tri[0] = vMap[v1] , tri[1] = vMap[v2] , tri[2] = vMap[v3];
-			triangles.push_back( tri );
-		}
-		else fprintf( stderr , "[WARNING] Couldn't parse line: %s\n" , line );
-	}
-	fclose( fp );
-	return 1;
-}
-template< class Vertex >
-int MWriteTriangles( const char* fileName , const std::vector<Vertex>& vertices , const std::vector< TriangleIndex >& triangles )
-{
-	FILE* fp = fopen( fileName , "w" );
-	if( !fp ) return 0;
-	for( int i=0 ; i<vertices.size() ; i++ ) fprintf( fp , "Vertex %d %.10f %.10f %.10f\n" , i+1 , vertices[i].point[0] , vertices[i].point[1] , vertices[i].point[2] );
-	for( int i=0 ; i<triangles.size() ; i++ ) fprintf( fp , "Face %d  %d %d %d\n" , i+1 , triangles[i][0]+1 , triangles[i][1]+1 , triangles[i][2]+1 );
-	fclose( fp );
-	return 1;
+	inline int DefaultFileType( void ){ return PLY_ASCII; }
 }

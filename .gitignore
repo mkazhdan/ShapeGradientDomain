@@ -1,8 +1,15 @@
-*.sdf
 *.suo
+.git/
+.vs/
+x64/
+/Eigen/
 /Obj/
-/Debug/
 /Bin/
+*/x64/
 *.opensdf
 *.bat
 *.tlog
+*.exe
+*.user
+*.filters
+*.zip
