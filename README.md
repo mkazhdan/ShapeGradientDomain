@@ -140,7 +140,7 @@ The figure below shows example of both isotropic and anisotropic geometry proces
 <LI> The processing is isotropic in the top two rows (&epsilon;=0 and &gamma; is irrelevent) and isotropic in the bottom one (&epsilon;=0.02 and &gamma;=10<sup>-4</sup>).
 </UL>
 
-<CENTER><IMG SRC="armadillo.png" HEIGHT=900></CENTER>
+<CENTER><IMG SRC="armadillo.png" WIDTH=80%></CENTER>
 
 
 
