@@ -152,12 +152,8 @@ namespace NormalSmoother
 
 			Eigen::VectorXd n( vertices.size()*Dim );
 			for( unsigned int i=0 ; i<vertices.size() ; i++ ) for( unsigned int d=0 ; d<Dim ; d++ ) n[i*Dim+d] = normals[i][d];
-#ifdef NEW_CODE
 			Eigen::VectorXd b = - Pt * S * n * timeStep;
 			n += P * solver->solve( b );
-#else // !NEW_CODE
-			n += P * solver->solve( - Pt * S * n * timeStep );
-#endif // NEW_CODE
 
 			for( unsigned int i=0 ; i<vertices.size() ; i++ )
 			{
