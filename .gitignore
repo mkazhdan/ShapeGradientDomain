@@ -1,3 +1,4 @@
+.gitignore
 *.suo
 .git/
 .vs/
