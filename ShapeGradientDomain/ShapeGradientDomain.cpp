@@ -28,7 +28,6 @@ DAMAGE.
 
 #include <Include/PreProcessor.h>
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <algorithm>
@@ -97,7 +96,7 @@ template< class Real > void SVD( const SquareMatrix< Real , 2 >& M , SquareMatri
 	//		x = ( tr(M) +/- sqrt( tr(M) * tr(M) - 4 * det(M) ) / 2
 	Real tr = M.trace() , det = M.determinant();
 	Real disc = tr*tr - 4 * det;
-	if( disc<0 ) fprintf( stderr , "[WARNING] Negative discriminant set to zero: %g\n" , disc ) , disc = 0;
+	if( disc<0 ){ WARN( "Negative discriminant set to zero: " , disc ) ; disc = 0; }
 	disc = (Real)sqrt( disc );
 	Real e1 = ( tr - disc ) / 2 , e2 = ( tr + disc ) / 2;
 	D(0,0) = e1 , D(1,1) = e2;
@@ -115,7 +114,7 @@ template< class Real > void SVD( const SquareMatrix< Real , 2 >& M , SquareMatri
 	if( !temp.determinant() ) return;
 
 	Point2D< Real > xx_yy = temp.inverse() * Point2D< Real >( M(0,0) , M(1,1) );
-	if( xx_yy[0]<0 || xx_yy[1]<0 ) fprintf( stderr , "[ERROR] The square is negative: %g , %g >=0\n" , xx_yy[0] , xx_yy[1] ) , exit( 0 );
+	if( xx_yy[0]<0 || xx_yy[1]<0 ) ERROR_OUT( "The square is negative: " , xx_yy[0] , " , " , xx_yy[1] , ">=0" );
 	Real x = (Real)sqrt( xx_yy[0] ) , y = (Real)sqrt( xx_yy[1] );
 	if( fabs( -x*y * e1 + x*y * e2 - M(0,1) )>fabs( x*y * e1 - x*y * e2 - M(0,1) ) ) x = -x;
 	R(0,0) = x , R(0,1) = y , R(1,0) = -y , R(1,1) = x;
@@ -235,30 +234,32 @@ int _main( void )
 		{
 			Miscellany::Timer timer;
 
-			Eigen::SparseMatrix< Real > mass = ToEigen( mesh.template massMatrix< FEM::BASIS_0_WHITNEY >() * ValueWeight.value );
-			Eigen::SparseMatrix< Real > stiffness = ToEigen( mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY >() * GradientWeight.value );
+			double systemTime = timer.elapsed();
+			Eigen::SparseMatrix< Real > mass = mesh.template massMatrix< FEM::BASIS_0_WHITNEY , true >() * ValueWeight.value;
+			Eigen::SparseMatrix< Real > stiffness = mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY , true >() * GradientWeight.value;
 
 			Eigen::SparseMatrix< Real > M = mass + stiffness;
-			double aTime = timer.elapsed();
+			systemTime = timer.elapsed() - systemTime;
+			double analyzeTime = timer.elapsed();
 			Solver solver;
 			solver.analyzePattern( M );
-			aTime = timer.elapsed() - aTime;
-			double fTime = timer.elapsed();
+			analyzeTime = timer.elapsed() - analyzeTime;
+			double factorizeTime = timer.elapsed();
 			solver.factorize( M );
-			fTime = timer.elapsed() - fTime;
+			factorizeTime = timer.elapsed() - factorizeTime;
 			Eigen::VectorXd x;
 			x.resize( vertices.size() );
-			double sTime = 0;
+			double solveTime = 0;
 			for( int c=0 ; c<3 ; c++ )
 			{
 				for( int i=0 ; i<vertices.size() ; i++ ) x[i] = signal[i][c];
 				double t = timer.elapsed();
 				Eigen::VectorXd b = mass * x + stiffness * x * GradientScale.value;
 				x = solver.solve( b );
-				sTime += timer.elapsed()-t;
+				solveTime += timer.elapsed()-t;
 				for( int i=0 ; i<vertices.size() ; i++ ) signal[i][c] = x[i];
 			}
-			if( Verbose.set ) std::cout << "\tSolved the system: " << timer() << ": " << aTime << " + " << fTime << " + " << sTime << std::endl;
+			if( Verbose.set ) std::cout << "\tSolved the system: " << timer() << ": " << systemTime << " + " << analyzeTime << " + " << factorizeTime << " + " << solveTime << std::endl;
 		}
 		// Compute and solve the system
 		///////////////////////////////

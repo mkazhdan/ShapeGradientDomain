@@ -40,6 +40,10 @@ DAMAGE.
 #include <algorithm>
 #include <atomic>
 
+#ifdef EIGEN_WORLD_VERSION
+#include <Eigen/Sparse>
+#endif // EIGEN_WORLD_VERSION
+
 #include "SparseMatrix.h"
 #include <string.h>
 #include <algorithm>
@@ -438,6 +442,19 @@ namespace FEM
 		/////////////////////////
 		// Geometric Operators //
 		/////////////////////////
+#ifdef EIGEN_WORLD_VERSION 
+		template< unsigned int BasisType , bool UseEigen=false >
+		std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > massMatrix( bool lump=false , ConstPointer( SquareMatrix< Real , 2 > ) newTensors = NullPointer< SquareMatrix< Real , 2 > >() ) const;
+		template< unsigned int InBasisType , unsigned int OutBasisType , bool UseEigen=false >
+		std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > dMatrix( void ) const;
+		template< unsigned int BasisType , unsigned int PreBasisType , unsigned int PostBasisType , bool UseEigen=false >
+		std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > stiffnessMatrix( ConstPointer( SquareMatrix< Real , 2 > ) newTensors = NullPointer< SquareMatrix< Real , 2 > >() ) const;
+		template< unsigned int BasisType , bool UseEigen=false >
+		std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > stiffnessMatrix( void ) const;
+
+		template< unsigned int BasisType , unsigned int Degree , bool UseEigen=false , typename CotangentVectorFieldFunctor = std::function< typename RightTriangle< Real >::template CotangentVectorField< Degree > ( unsigned int tIdx ) > >
+		std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > >  derivation( CotangentVectorFieldFunctor v ) const;
+#else // !EIGEN_WORLD_VERSION 
 		template< unsigned int BasisType > SparseMatrix< Real , int > massMatrix( bool lump=false , ConstPointer( SquareMatrix< Real , 2 > ) newTensors = NullPointer< SquareMatrix< Real , 2 > >() ) const;
 		template< unsigned int InBasisType , unsigned int OutBasisType > SparseMatrix< Real , int > dMatrix( void ) const;
 		template< unsigned int BasisType , unsigned int PreBasisType , unsigned int PostBasisType > SparseMatrix< Real , int > stiffnessMatrix( ConstPointer( SquareMatrix< Real , 2 > ) newTensors = NullPointer< SquareMatrix< Real , 2 > >() ) const;
@@ -445,6 +462,7 @@ namespace FEM
 
 		template< unsigned int BasisType , unsigned int Degree , typename CotangentVectorFieldFunctor /* = std::function< RightTriangle< Real >::CotangentVectorField< Degree > ( unsigned int tIdx ) > */ >
 		SparseMatrix< Real , int > derivation( CotangentVectorFieldFunctor v ) const;
+#endif // EIGEN_WORLD_VERSION
 
 		// Integrate the piecewise linear function over the mesh
 		Real getIntegral( ConstPointer( Real ) coefficients ) const;
