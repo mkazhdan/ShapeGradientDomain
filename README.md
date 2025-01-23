@@ -112,6 +112,7 @@ If you are using Eigen and your implementation is backed by <A HREF="https://sof
 
 <HR>
 <A NAME="EXAMPLES"><B>EXAMPLES</B></A><br>
+<UL>
 The figure below shows example of both isotropic and anisotropic geometry processing.<BR>
 <UL>
 <LI><B>Top row</B>: Isotropic sharpening:
@@ -121,7 +122,8 @@ The figure below shows example of both isotropic and anisotropic geometry proces
 <LI><B>Bottom row</B>: Anisotropic smoothing:
 <PRE>     <CODE>ShapeGradientDomain --in armadillo.ply --out armadillo.smooth.ply --gScale 0 --gWeight &lt;gradient weight&gt; --kWeight 0.02 --nIters 1 </CODE></PRE>
 </UL>
-For all three rows, the gradient weight is chosen from {10<sup>-3</sup>,10<sup>-4</sup>,10<sup>-5</sup>}
+For all three rows, the gradient weight is chosen from {<CODE>1e-3</CODE>, <CODE>1e-4</CODE>, <CODE>1e-5</CODE>}
+</UL>
 <!--
 <UL>
 <LI> Geometric effects are obtained by either amplifying (&lambda;=2 in the top row) or dampening (&lambda;=0 in the bottom two rows) gradients.
