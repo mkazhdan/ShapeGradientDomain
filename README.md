@@ -122,15 +122,8 @@ The figure below shows example of both isotropic and anisotropic geometry proces
 <LI><B>Bottom row</B>: Anisotropic smoothing:
 <PRE>     <CODE>ShapeGradientDomain --in armadillo.ply --out armadillo.smooth.ply --gScale 0 --gWeight &lt;gradient weight&gt; --kWeight 0.02 --nIters 1 </CODE></PRE>
 </UL>
-For all three rows, the gradient weight is chosen from {<CODE>1e-3</CODE>, <CODE>1e-4</CODE>, <CODE>1e-5</CODE>}
+For all three, the value of <CODE>&lt;gradient weight&gt;</CODE> is chosen from {<CODE>1e-3</CODE>, <CODE>1e-4</CODE>, <CODE>1e-5</CODE>}
 </UL>
-<!--
-<UL>
-<LI> Geometric effects are obtained by either amplifying (&lambda;=2 in the top row) or dampening (&lambda;=0 in the bottom two rows) gradients.
-<LI> From left to right, the gradient weight is successively decreased (&beta;=10<sup>-3</sup>, &beta;=10<sup>-4</sup>, and &beta;=10<sup>-5</sup>) corresponding to successively more loacalized edits.
-<LI> The processing is isotropic in the top two rows (&epsilon;=0 and &gamma; is irrelevent) and isotropic in the bottom one (&epsilon;=0.02 and &gamma;=10<sup>-4</sup>).
-</UL>
--->
 
 <CENTER><IMG SRC="armadillo.png" WIDTH=80%></CENTER>
 
