@@ -3,8 +3,8 @@
 <A HREF="#LINKS">links</A>
 <A HREF="#DESCRIPTION">description</A>
 <A HREF="#EXECUTABLE">executable</A>
-<A HREF="#EXAMPLES">examples</A>
 <A HREF="#NOTES">notes</A>
+<A HREF="#EXAMPLES">examples</A>
 <A HREF="#CHANGES">changes</A>
 </CENTER>
 <HR>
@@ -21,10 +21,9 @@
 
 <HR>
 <A NAME="DESCRIPTION"><B>DESCRIPTION</B></A><br>
-The code is comprised of a single executable.
 <UL>
 <P>
-<LI> <B><U>ShapeGradientDomain</U></B>
+<!--<LI> <B><U>ShapeGradientDomain</U></B>-->
 
 <P>This code performs gradient domain processing [<A href="https://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009</A>] on signals defined on a mesh, where the signal can be either a color-field represented as a color per vertex or is the position of the vertices themselves.
 The code supports both sharpening and smoothing of the signals through the solution of a screened-Poisson equation.
@@ -35,7 +34,7 @@ Specifically, given an input signal <I>F</I>, it solves for the signal <I>G</I> 
 where &alpha; is the value-fitting weight, &beta; is the gradient-fitting weight, and &lambda; is the gradient scale factor.<br>
 The code supports inhomogenous processing by allowing the user to replace the Riemannian metric, <I>g</I>, given by the embedding, with a metric that adjusts to the curvature of the surface. Specifically, given orthonormal principal curvature directions, the (idenity) metric is replaced with:<BR>
 <CENTER> Id. + &epsilon;&sdot;&Kappa;<sup>2</sup></CENTER>
-where Id. is the identity matrix and &Kappa;<sup>2</sup> is the diagonal matrix whose entries are the squares of the principal curature values and &epsilon; is the curvature weight.<br>
+where Id. is the identity matrix, &Kappa;<sup>2</sup> is the diagonal matrix whose entries are the squares of the principal curature values, and &epsilon; is the curvature weight.<br>
 Curvatures are estimated using the surface normals. If none are provided, the vertex normals are estimated as the area-weighted sum of adjacent triangle normals.
 
 <P>For more robust estimation of normals, the executable also supports harmonic smoothing of normals as described in [<A href="https://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016</A>]. As with the code above, this amounts to minimizing:<br>
@@ -44,7 +43,6 @@ Curvatures are estimated using the surface normals. If none are provided, the ve
 </CENTER><BR>
 where &gamma; is the diffusion weight (time).<br>
 
-If no normals are provided, the vertex normals are estimated as the area-weighted sum of adjacent triangle normals.
 </UL>
 <!--
 Note that when &beta; is set to zero the two executables differ in that the first emaulates harmonic flow from the input geometry to Euclidean three-space (allowing the variation at a vertex to occur in any direction) while the second emulates harmonic flow from the input geometry to the two-sphere (constrainting the variation at a vertex to occur in the tangent space of the associated normal).
@@ -109,17 +107,28 @@ If the flag is enabled and the input file does not contain per-vertex colors, co
 <A NAME="NOTES"><B>NOTES</B></A><br>
 <UL>
 <LI> The code requires <A HREF="https://eigen.tuxfamily.org">Eigen</A> as a numerical solver.<BR>
-If you are using Eigen and your implementation is backed by <A HREF="https://software.intel.com/en-us/intel-mkl/">Intel's Math Kernel Library</A> (see discussion <A HREF="https://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html">here</A>), enable the <CODE>EIGEN_USE_MKL_ALL</CODE> macro by defining it in the file <CODE>PreProcessor.h</CODE>. (The two versions of the <A HREF="https://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/Version3.0/ShapeGradientDomain.x64.zip">Windows executables</A> are similarly compiled with and without MKL support.)
+If you are using Eigen and your implementation is backed by <A HREF="https://software.intel.com/en-us/intel-mkl/">Intel's Math Kernel Library</A> (see discussion <A HREF="https://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html">here</A>), enable the <CODE>EIGEN_USE_MKL_ALL</CODE> macro by defining it in the file <CODE>PreProcessor.h</CODE>. (The two versions of the <A HREF="https://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/Version3.0/ShapeGradientDomain.x64.zip">Windows executables</A> are compiled with and without MKL support.)
 </UL>
 
 <HR>
 <A NAME="EXAMPLES"><B>EXAMPLES</B></A><br>
 The figure below shows example of both isotropic and anisotropic geometry processing.<BR>
 <UL>
+<LI><B>Top row</B>: Isotropic sharpening:
+<PRE>     <CODE>ShapeGradientDomain --in armadillo.ply --out armadillo.sharp.ply --gScale 2 --gWeight &lt;gradient weight&gt; </CODE></PRE>
+<LI><B>Middle row</B>: Isotropic smoothing:
+<PRE>     <CODE>ShapeGradientDomain --in armadillo.ply --out armadillo.smooth.ply --gScale 0 --gWeight &lt;gradient weight&gt; </CODE></PRE>
+<LI><B>Bottom row</B>: Anisotropic smoothing:
+<PRE>     <CODE>ShapeGradientDomain --in armadillo.ply --out armadillo.smooth.ply --gScale 0 --gWeight &lt;gradient weight&gt; --kWeight 0.02 --nIters 1 </CODE></PRE>
+</UL>
+For all three rows, the gradient weight is chosen from {10<sup>-3</sup>,10<sup>-4</sup>,10<sup>-5</sup>}
+<!--
+<UL>
 <LI> Geometric effects are obtained by either amplifying (&lambda;=2 in the top row) or dampening (&lambda;=0 in the bottom two rows) gradients.
 <LI> From left to right, the gradient weight is successively decreased (&beta;=10<sup>-3</sup>, &beta;=10<sup>-4</sup>, and &beta;=10<sup>-5</sup>) corresponding to successively more loacalized edits.
 <LI> The processing is isotropic in the top two rows (&epsilon;=0 and &gamma; is irrelevent) and isotropic in the bottom one (&epsilon;=0.02 and &gamma;=10<sup>-4</sup>).
 </UL>
+-->
 
 <CENTER><IMG SRC="armadillo.png" WIDTH=80%></CENTER>
 
