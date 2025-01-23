@@ -1,8 +1,8 @@
-<CENTER><H2>Shape Gradient Domain (Version 2.0)</H2></CENTER>
+<CENTER><H2>Shape Gradient Domain (Version 3.0)</H2></CENTER>
 <CENTER>
 <A HREF="#LINKS">links</A>
 <A HREF="#DESCRIPTION">description</A>
-<A HREF="#EXECUTABLES">executables</A>
+<A HREF="#EXECUTABLE">executable</A>
 <A HREF="#EXAMPLES">examples</A>
 <A HREF="#NOTES">notes</A>
 <A HREF="#CHANGES">changes</A>
@@ -10,20 +10,23 @@
 <HR>
 <A NAME="LINKS"><B>LINKS</B></A><br>
 <A href="https://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009 Paper</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016 Paper</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/JCGT16.pdf">JCGT 2016 Paper</A><br>
-<A HREF="https://www.cs.jhu.edu/~misha/ShapeGradientDomain/Version2.0/ShapeGradientDomain.x64.zip">Windows (x64) Executables</A><BR>
-<A href="https://www.cs.jhu.edu/~misha/ShapeGradientDomain/Version2.0/ShapeGradientDomain.zip">Source Code</A><br> <A HREF="https://github.com/mkazhdan/ShapeGradientDomain">GitHub Repository</A><BR>
+<A HREF="https://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/Version3.0/ShapeGradientDomain.x64.zip">Windows (x64) Executables</A><BR>
+<A href="https://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/Version3.0/ShapeGradientDomain.zip">Source Code</A><br>
+<A HREF="https://github.com/mkazhdan/ShapeGradientDomain">GitHub Repository</A><BR>
 (Older Versions:
-<A href="https://www.cs.jhu.edu/~misha/ShapeGradientDomain/Version1.0/">V1.0</A>)
+<A href="https://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/Version2.0/">V2.0</A>,
+<A href="https://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/Version1.0/">V1.0</A>)
 <br>
 
 
 <HR>
 <A NAME="DESCRIPTION"><B>DESCRIPTION</B></A><br>
-The code is comprised of two executables.
+The code is comprised of a single executable.
 <UL>
 <P>
-<LI> <B><U>ShapeGradientDomain</U></B>: [<A href="https://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009</A>]<P>
-This code performs gradient domain processing on signals defined on a mesh, where the signal can be either a color-field represented as a color per vertex or is the position of the vertices themselves..
+<LI> <B><U>ShapeGradientDomain</U></B>
+
+<P>This code performs gradient domain processing [<A href="https://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009</A>] on signals defined on a mesh, where the signal can be either a color-field represented as a color per vertex or is the position of the vertices themselves.
 The code supports both sharpening and smoothing of the signals through the solution of a screened-Poisson equation.
 Specifically, given an input signal <I>F</I>, it solves for the signal <I>G</I> minimizing:<BR>
 <CENTER>
@@ -34,8 +37,8 @@ The code supports inhomogenous processing by allowing the user to replace the Ri
 <CENTER> Id. + &epsilon;&sdot;&Kappa;<sup>2</sup></CENTER>
 where Id. is the identity matrix and &Kappa;<sup>2</sup> is the diagonal matrix whose entries are the squares of the principal curature values and &epsilon; is the curvature weight.<br>
 Curvatures are estimated using the surface normals. If none are provided, the vertex normals are estimated as the area-weighted sum of adjacent triangle normals.
-<LI> <B><U>Normal Smooth</U></B>: [<A href="https://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016</A>]<P>
-This code performs multiple iterations of harmonic smoothing of the surface normals. As with the code above, this amounts to minimizing:<br>
+
+<P>For more robust estimation of normals, the executable also supports harmonic smoothing of normals as described in [<A href="https://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016</A>]. As with the code above, this amounts to minimizing:<br>
 <CENTER>
 <I>E</I>(<I>G</I>) = ||<I>F</I>-<I>G</I>||<sup>2</sup> + &gamma;&sdot;||&nabla;<I>G</I>||<sup>2</sup>
 </CENTER><BR>
@@ -43,10 +46,12 @@ where &gamma; is the diffusion weight (time).<br>
 
 If no normals are provided, the vertex normals are estimated as the area-weighted sum of adjacent triangle normals.
 </UL>
+<!--
 Note that when &beta; is set to zero the two executables differ in that the first emaulates harmonic flow from the input geometry to Euclidean three-space (allowing the variation at a vertex to occur in any direction) while the second emulates harmonic flow from the input geometry to the two-sphere (constrainting the variation at a vertex to occur in the tangent space of the associated normal).
+-->
 
 <HR>
-<a name="EXECUTABLES"><b>EXECUTABLES</b></a><br>
+<a name="EXECUTABLE"><b>EXECUTABLE</b></a><br>
 
 
 <UL>
@@ -54,8 +59,7 @@ Note that when &beta; is set to zero the two executables differ in that the firs
 <DETAILS>
 <SUMMARY>
 <font size="+1"><b>ShapeGradientDomain</b></font>:
-Processes either the vertex positions, or per-vertex colors, performing isotropic/anisotropic gradient-domain smoothing and sharpening
-[<A href="https://www.cs.jhu.edu/~misha/MyPapers/SGP09.pdf">SGP 2009</A>, <A href="https://www.cs.jhu.edu/~misha/MyPapers/JCGT16.pdf">JCGT 2016</A>]
+Processes either the vertex positions, or per-vertex colors, performing isotropic/anisotropic gradient-domain smoothing and sharpening (with the option of smoothing normals in a pre-processing step)
 </SUMMARY>
 
 <DT><b>--in</b> &#60;<i>input geometry</i>&#62;
@@ -80,6 +84,14 @@ The default value for this parameter is 1.0.<br>
 <DD> This floating point value gives the curvature weight for adjusting the metric (&epsilon;).<BR>
 The default value for this parameter is 0.0.<br>
 
+<DT>[<b>--nIters</b> &#60;<i>normal smoothing iterations</i>&#62;]
+<DD> This integer value gives the number of iterations of harmonic normal smoothing to be performed before estimating curvatures. (If normal smoothing is desired, we have found that a single iteration suffices.)<BR>
+The default value for this parameter is 0.<br>
+
+<DT>[<b>--nTime</b> &#60;<i>normal diffusion time</i>&#62;]
+<DD> This floating point value gives the normal diffusion time (&gamma;).<BR>
+The default value for this parameter is 10<sup>-4</sup>.<br>
+
 <DT>[<b>--useColors</b>]
 <DD> If this flag is enabled, the signal to be processed is the per-vertex color field. Otherwise, it is the vertex positions.<BR>
 If the flag is enabled and the input file does not contain per-vertex colors, colors will be assigned from the normals.
@@ -93,42 +105,11 @@ If the flag is enabled and the input file does not contain per-vertex colors, co
 
 
 
-<UL>
-<DL>
-<DETAILS>
-<SUMMARY>
-<font size="+1"><b>NormalSmooth</b></font>:
-Diffuses surface normals, restricting the change to be within the tangent plane [<A href="https://www.cs.jhu.edu/~misha/MyPapers/SIG16.pdf">SIGGRAPH 2016</A>].
-</SUMMARY>
-
-
-<DT><b>--in</b> &#60;<i>input geometry</i>&#62;
-<DD> This string specifies the name of the input geometry, represented in <A HREF="https://www.cc.gatech.edu/projects/large_models/ply.html">PLY</A> format.
-
-<DT>[<b>--out</b> &#60;<i>ouput geometry</i>&#62;]
-<DD> This string specifies the name of the output geometry, represented in <A HREF="https://www.cc.gatech.edu/projects/large_models/ply.html">PLY</A> format.
-
-<DT>[<b>--iters</b> &#60;<i>iterations</i>&#62;]
-<DD> This integer value specifies the number of smoothing iterations that are to be performed..<BR>
-The default value for this parameter is 1.<br>
-
-<DT>[<b>--dTime</b> &#60;<i>gradient interpolation weight / diffusion time</i>&#62;]
-<DD> This floating point value gives the weight for gradient interpolation / diffusion time (&gamma;).<BR>
-The default value for this parameter is 10<sup>-4</sup>.<br>
-
-<DT>[<b>--verbose</b>]
-<DD> If this flag is enabled, the code will output processing information.
-
-</DETAILS>
-</DL>
-</UL>
-
-
 <HR>
 <A NAME="NOTES"><B>NOTES</B></A><br>
 <UL>
 <LI> The code requires <A HREF="https://eigen.tuxfamily.org">Eigen</A> as a numerical solver.<BR>
-If you are using Eigen and your implementation is backed by <A HREF="https://software.intel.com/en-us/intel-mkl/">Intel's Math Kernel Library</A> (see discussion <A HREF="https://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html">here</A>), enable the <CODE>EIGEN_USE_MKL_ALL</CODE> macro by defining it in the file <CODE>PreProcessor.h</CODE>. (The two versions of the <A HREF="https://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/Version2.0/ShapeGradientDomain.x64.zip">Windows executables</A> are similarly compiled with and without MKL support.)
+If you are using Eigen and your implementation is backed by <A HREF="https://software.intel.com/en-us/intel-mkl/">Intel's Math Kernel Library</A> (see discussion <A HREF="https://eigen.tuxfamily.org/dox/TopicUsingIntelMKL.html">here</A>), enable the <CODE>EIGEN_USE_MKL_ALL</CODE> macro by defining it in the file <CODE>PreProcessor.h</CODE>. (The two versions of the <A HREF="https://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/Version3.0/ShapeGradientDomain.x64.zip">Windows executables</A> are similarly compiled with and without MKL support.)
 </UL>
 
 <HR>
@@ -149,10 +130,16 @@ The figure below shows example of both isotropic and anisotropic geometry proces
 <SUMMARY>
 <A NAME="CHANGES"><font size="+1"><b><B>HISTORY OF CHANGES</B></b></font></A>
 </SUMMARY>
-<a href="../Version2.0/">Version 2.0</a>:
+
+<a href="https://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/Version2.0/">Version 2.0</a>:
 <OL>
 <LI> Added options to weight both value and gradient interpolation terms.
 <LI> Changed default values to correspond to diffusion time.
+</OL>
+
+<a href="https://www.cs.jhu.edu/~misha/Code/ShapeGradientDomain/Version3.0/">Version 3.0</a>:
+<OL>
+<LI> Integrated normal smoothing within the gradient-domain processing application.
 </OL>
 
 </DETAILS>

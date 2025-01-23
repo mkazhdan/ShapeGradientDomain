@@ -1,7 +1,5 @@
 SHAPE_GRADIENT_DOMAIN_TARGET=ShapeGradientDomain
-NORMAL_SMOOTH_TARGET=NormalSmooth
 SHAPE_GRADIENT_DOMAIN_SOURCE=ShapeGradientDomain/ShapeGradientDomain.cpp
-NORMAL_SMOOTH_SOURCE=NormalSmooth/NormalSmooth.cpp
 
 COMPILER ?= gcc
 #COMPILER ?= clang
@@ -36,36 +34,25 @@ MD=mkdir
 
 SHAPE_GRADIENT_DOMAIN_OBJECTS=$(addprefix $(BIN_O), $(addsuffix .o, $(basename $(SHAPE_GRADIENT_DOMAIN_SOURCE))))
 SHAPE_GRADIENT_DOMAIN_OBJECT_DIR=$(dir $(SHAPE_GRADIENT_DOMAIN_OBJECTS))
-NORMAL_SMOOTH_OBJECTS=$(addprefix $(BIN_O), $(addsuffix .o, $(basename $(NORMAL_SMOOTH_SOURCE))))
-NORMAL_SMOOTH_OBJECT_DIR=$(dir $(NORMAL_SMOOTH_OBJECTS))
 
 all: make_dirs
 all: $(BIN)$(SHAPE_GRADIENT_DOMAIN_TARGET)
-all: $(BIN)$(NORMAL_SMOOTH_TARGET)
 
 shapegradientdomain: make_dirs
 shapegradientdomain: $(BIN)$(SHAPE_GRADIENT_DOMAIN_TARGET)
 
-normalsmooth: make_dirs
-normalsmooth: $(BIN)$(NORMAL_SMOOTH_TARGET)
-
 clean:
 	rm -rf $(BIN)$(SHAPE_GRADIENT_DOMAIN_TARGET)
-	rm -rf $(BIN)$(NORMAL_SMOOTH_TARGET)
 	rm -rf $(BIN_O)
 
 make_dirs: FORCE
 	$(MD) -p $(BIN)
 	$(MD) -p $(BIN_O)
 	$(MD) -p $(SHAPE_GRADIENT_DOMAIN_OBJECT_DIR)
-	$(MD) -p $(NORMAL_SMOOTH_OBJECT_DIR)
 
 
 $(BIN)$(SHAPE_GRADIENT_DOMAIN_TARGET): $(SHAPE_GRADIENT_DOMAIN_OBJECTS)
 	$(CXX) -o $@ $(SHAPE_GRADIENT_DOMAIN_OBJECTS) -L$(BIN) $(LFLAGS)
-
-$(BIN)$(NORMAL_SMOOTH_TARGET): $(NORMAL_SMOOTH_OBJECTS)
-	$(CXX) -o $@ $(NORMAL_SMOOTH_OBJECTS) -L$(BIN) $(LFLAGS)
 
 
 $(BIN_O)%.o: $(SRC)%.cpp

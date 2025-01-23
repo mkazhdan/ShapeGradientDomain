@@ -32,24 +32,60 @@ DAMAGE.
 #include <stdlib.h>
 #include <algorithm>
 #include <vector>
-#include <mutex>
+
+#include <Eigen/Sparse>
+#ifdef EIGEN_USE_MKL_ALL
+#include <Eigen/PardisoSupport>
+#endif // EIGEN_USE_MKL_ALL
+
 #include <Misha/CmdLineParser.h>
 #include <Misha/Miscellany.h>
 #include <Misha/Algebra.h>
 #include <Misha/Ply.h>
 #include <Misha/PlyVertexData.h>
-#include <Eigen/Sparse>
-#ifdef EIGEN_USE_MKL_ALL
-#include <Eigen/PardisoSupport>
-#endif // EIGEN_USE_MKL_ALL
 #include <Misha/FEM.h>
 #include <Misha/MultiThreading.h>
+#include <Misha/NormalSmoother.h>
 
-Misha::CmdLineParameter< std::string > In( "in" ) , Out( "out" );
-Misha::CmdLineParameter< float > ValueWeight( "vWeight" , 1.f ) , GradientWeight( "gWeight" , 1e-4f ) , GradientScale( "gScale" , 1.f );
-Misha::CmdLineParameter< float > CurvatureWeight( "kWeight" , 0.f );
-Misha::CmdLineReadable Anisotropic( "anisotropic" ) , UseColors( "useColors" ) , Verbose( "verbose" );
-Misha::CmdLineReadable* params[] = { &In , &Out , &ValueWeight , &GradientWeight , &GradientScale , &Anisotropic , &UseColors , &CurvatureWeight , &Verbose , NULL };
+#include <Include/CurvatureMetric.h>
+#include <Include/GradientDomain.h>
+
+Misha::CmdLineParameter< std::string >
+	In( "in" ) ,
+	Out( "out" );
+
+Misha::CmdLineParameter< float >
+	NormalSmoothingDiffusionTime( "nTime" , 1e-4f ) ,
+	CurvatureWeight( "kWeight" , 0.f ) ,
+	ValueWeight( "vWeight" , 1.f ) ,
+	GradientWeight( "gWeight" , 1e-4f ) ,
+	GradientScale( "gScale" , 1.f );
+
+Misha::CmdLineParameter< int >
+	NormalSmoothingIters( "nIters" , 0 );
+
+Misha::CmdLineReadable
+	UseEdgeDifferences( "edgeDifferences" ) ,
+	Anisotropic( "anisotropic" ) ,
+	UseColors( "useColors" ) ,
+	Verbose( "verbose" );
+
+Misha::CmdLineReadable* params[] =
+{
+	&In ,
+	&Out ,
+	&ValueWeight ,
+	&GradientWeight ,
+	&GradientScale ,
+	&Anisotropic ,
+	&UseColors ,
+	&CurvatureWeight ,
+	&NormalSmoothingIters ,
+	&NormalSmoothingDiffusionTime ,
+	&UseEdgeDifferences ,
+	&Verbose ,
+	NULL
+};
 
 void ShowUsage( const char* ex )
 {
@@ -60,7 +96,10 @@ void ShowUsage( const char* ex )
 	printf( "\t[--%s <gradient weight>=%f]\n" , GradientWeight.name.c_str() , GradientWeight.value );
 	printf( "\t[--%s <gradient scale>=%f]\n" , GradientScale.name.c_str() , GradientScale.value );
 	printf( "\t[--%s <curvature weight>=%f]\n" , CurvatureWeight.name.c_str() , CurvatureWeight.value );
+	printf( "\t[--%s <normal smoothing iterations>=%d]\n" , NormalSmoothingIters.name.c_str() , NormalSmoothingIters.value );
+	printf( "\t[--%s <normal smoothing diffusion time>=%g]\n" , NormalSmoothingDiffusionTime.name.c_str() , NormalSmoothingDiffusionTime.value );
 	printf( "\t[--%s]\n" , Anisotropic.name.c_str() );
+	printf( "\t[--%s]\n" , UseEdgeDifferences.name.c_str() );
 	printf( "\t[--%s]\n" , UseColors.name.c_str() );
 	printf( "\t[--%s]\n" , Verbose.name.c_str() );
 }
@@ -73,65 +112,6 @@ using Solver = Eigen::SimplicialLLT< Eigen::SparseMatrix< double > >;
 
 template< class Real > Real Clamp( Real v , Real min , Real max ){ return std::min< Real >( max , std::max< Real >( min , v ) ); }
 template< class Real > Point3D< Real > ClampColor( Point3D< Real > c ){ return Point3D< Real >( Clamp( c[0] , (Real)0 , (Real)255 ) , Clamp( c[1] , (Real)0 , (Real)255 ) , Clamp( c[2] , (Real)0 , (Real)255 ) ); }
-
-template< typename Real >
-Eigen::SparseMatrix< Real > ToEigen( const SparseMatrix< Real , int > & M )
-{
-	Eigen::SparseMatrix< Real > _M;
-	_M.resize( M.Rows() , M.Rows() );
-	std::vector< Eigen::Triplet< Real > > triplets( M.Entries() );
-	for( unsigned int i=0 , idx=0 ; i<M.Rows() ; i++ ) for( unsigned int j=0 ; j<M.rowSizes[i] ; j++ , idx++ )
-		triplets[idx] = Eigen::Triplet< Real >( i , M[i][j].N , M[i][j].Value );
-	_M.setFromTriplets( triplets.begin() , triplets.end() );
-	return _M;
-}
-
-// Compute the SVD factorization of a _SYMMETRIC_ matrix M as M = R^t * D * R
-template< class Real > void SVD( const SquareMatrix< Real , 2 >& M , SquareMatrix< Real , 2 >& D , SquareMatrix< Real , 2 >& R )
-{
-	R = D = SquareMatrix< Real , 2 >::Identity();
-	// The characteristic polynomial is:
-	//		P(x) = x^2 - tr(M) * x + det(M)
-	// The roots are:
-	//		x = ( tr(M) +/- sqrt( tr(M) * tr(M) - 4 * det(M) ) / 2
-	Real tr = M.trace() , det = M.determinant();
-	Real disc = tr*tr - 4 * det;
-	if( disc<0 ){ WARN( "Negative discriminant set to zero: " , disc ) ; disc = 0; }
-	disc = (Real)sqrt( disc );
-	Real e1 = ( tr - disc ) / 2 , e2 = ( tr + disc ) / 2;
-	D(0,0) = e1 , D(1,1) = e2;
-
-	// Assuming that the columns of R are (x,y)^t and (-y,x)^t, we get:
-	//		 x*x * e1 + y*y * e2 = M(0,0)
-	//		 x*x * e2 + y*y * e1 = M(1,1)
-	//		-x*y * e1 + x*y * e2 = M(0,1)
-	// Using the first two equations we get the values of x*x and y*y.
-	// We can then choose the sign minimizing the third equation.
-
-	SquareMatrix< Real , 2 > temp;
-	temp(0,0) = temp(1,1) = e1 , temp(1,0) = temp(0,1) = e2;
-	// The determinant vanishes if e1 = e2 [Which is good because then there is multiplicity.]
-	if( !temp.determinant() ) return;
-
-	Point2D< Real > xx_yy = temp.inverse() * Point2D< Real >( M(0,0) , M(1,1) );
-	if( xx_yy[0]<0 || xx_yy[1]<0 ) ERROR_OUT( "The square is negative: " , xx_yy[0] , " , " , xx_yy[1] , ">=0" );
-	Real x = (Real)sqrt( xx_yy[0] ) , y = (Real)sqrt( xx_yy[1] );
-	if( fabs( -x*y * e1 + x*y * e2 - M(0,1) )>fabs( x*y * e1 - x*y * e2 - M(0,1) ) ) x = -x;
-	R(0,0) = x , R(0,1) = y , R(1,0) = -y , R(1,1) = x;
-}
-template< class Real > SquareMatrix< Real , 2 > SecondFundamentalForm( const Point3D< Real > v[3] , const Point3D< Real > n[3] )
-{
-	SquareMatrix< Real , 2 > II;
-	Point3D< Real > dv[] = { v[1]-v[0] , v[2]-v[0] } , dn[] = { n[1]-n[0] , n[2]-n[0] };
-	for( int i=0 ; i<2 ; i++ ) for( int j=0 ; j<2 ; j++ ) II( i , j ) = Point3D< Real >::Dot( dv[i] , dn[j] );
-	II(1,0) = II (0,1) = ( II(0,1) + II(1,0) ) / (Real)2.;
-	return II;
-}
-template< class Real > SquareMatrix< Real , 2 > SecondFundamentalForm( Point3D< Real > v0 , Point3D< Real > v1 , Point3D< Real > v2 , Point3D< Real > n0 , Point3D< Real > n1 , Point3D< Real > n2 )
-{
-	Point3D< Real > v[] = { v0 , v1 , v2 } , n[] = { n0 , n1 , n2 };
-	return SecondFundamentalForm( v , n );
-}
 
 template< class Real >
 int _main( void )
@@ -172,6 +152,20 @@ int _main( void )
 	// Read in the data //
 	//////////////////////
 
+	///////////////////
+	// Normal smoothing
+	if( NormalSmoothingIters.value>0 && NormalSmoothingDiffusionTime.value>0 )
+	{
+		Miscellany::Timer timer;
+		std::vector< Point3D< Real > > v( vertices.size() ) , n( vertices.size() );
+		for( unsigned int i=0 ; i<vertices.size() ; i++ ) v[i] = vertices[i].template get<0>() , n[i] = vertices[i].template get<1>();
+		NormalSmoother::Smooth< 2 , int , Solver >( v , n , triangles , NormalSmoothingIters.value , NormalSmoothingDiffusionTime.value );
+		for( unsigned int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<1>() = n[i];
+		if( Verbose.set ) std::cout << "\tSmoothed normals: " << timer() << std::endl;
+	}
+	// Normal smoothing
+	///////////////////
+	
 	std::vector< Point3D< Real > > signal( vertices.size() );
 
 	//////////////////
@@ -195,35 +189,21 @@ int _main( void )
 		if( CurvatureWeight.value>0 )
 		{
 			Miscellany::Timer timer;
-			Real s = (Real)( 1. / sqrt(area) );
-			std::vector< Real > curvatureValues;
-
-
-			std::mutex mut;
-			ThreadPool::ParallelFor
-			(
-				0 , triangles.size() ,
-				[&]( unsigned int , size_t i )
+			auto PrincipalCurvatureFunctor = [&]( Point< Real , 2 > pCurvatures )
 				{
-					Point3D< Real > v[] = { Point3D< Real >( vertices[ triangles[i][0] ].template get<0>() ) * s , Point3D< Real >( vertices[ triangles[i][1] ].template get<0>() ) * s , Point3D< Real >( vertices[ triangles[i][2] ].template get<0>() ) * s };
-					Point3D< Real > n[] = { Point3D< Real >( vertices[ triangles[i][0] ].template get<1>() )     , Point3D< Real >( vertices[ triangles[i][1] ].template get<1>() )     , Point3D< Real >( vertices[ triangles[i][2] ].template get<1>() )     };
-					SquareMatrix< Real , 2 > II = SecondFundamentalForm( v , n );
-
-					// The columns of A_inverse given an orthonormal frame with respect to g.
-					SquareMatrix< Real , 2 > A = FEM::TensorRoot( mesh.g(i) ) , A_inverse = A.inverse() , D , R;
-					// The matrix A_inverse^t * II * A_inverse gives the second fundamental form with respect to a basis that is orthonormal w.r.t. g
-					// The rows of R are the eigenvecctors.
-					SVD( A_inverse.transpose() * II * A_inverse , D , R );
-					D(0,0) *= D(0,0);
-					D(1,1) *= D(1,1);
-					if( !Anisotropic.set ) D(0,0) = D(1,1) = ( D(0,0) + D(1,1) ) / (Real)2.;
-					D = SquareMatrix< Real , 2 >::Identity() + D * CurvatureWeight.value;
-					// Multiplying by A gives the coefficients w.r.t. to an orthonormal basis.
-					// Multiplying by R gives the coefficients w.r.t. to the principal curvature directions.
-					mesh.g( i ) = A.transpose() * R.transpose() * D * R * A;
-				}
+					pCurvatures[0] *= pCurvatures[0];
+					pCurvatures[1] *= pCurvatures[1];
+					if( !Anisotropic.set ) pCurvatures[0] = pCurvatures[1] = ( pCurvatures[0] + pCurvatures[1] ) / (Real)2.;
+					return Point< Real , 2 >( (Real)1. , (Real)1. ) + pCurvatures * CurvatureWeight.value;
+				};
+			Real s = (Real)(1./sqrt(area) );
+			CurvatureMetric::SetCurvatureMetric
+			(
+				mesh ,
+				[&]( unsigned int idx ){ return Point< Real , 3 >( vertices[idx].template get<0>() ) * s; } ,
+				[&]( unsigned int idx ){ return Point< Real , 3 >( vertices[idx].template get<1>() ); } ,
+				PrincipalCurvatureFunctor
 			);
-
 			if( Verbose.set ) std::cout << "\tUpdated metric: " << timer() << std::endl;
 		}
 		// Modify the metric
@@ -234,32 +214,23 @@ int _main( void )
 		{
 			Miscellany::Timer timer;
 
-			double systemTime = timer.elapsed();
-			Eigen::SparseMatrix< Real > mass = mesh.template massMatrix< FEM::BASIS_0_WHITNEY , true >() * ValueWeight.value;
-			Eigen::SparseMatrix< Real > stiffness = mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY , true >() * GradientWeight.value;
-
-			Eigen::SparseMatrix< Real > M = mass + stiffness;
-			systemTime = timer.elapsed() - systemTime;
-			double analyzeTime = timer.elapsed();
-			Solver solver;
-			solver.analyzePattern( M );
-			analyzeTime = timer.elapsed() - analyzeTime;
-			double factorizeTime = timer.elapsed();
-			solver.factorize( M );
-			factorizeTime = timer.elapsed() - factorizeTime;
-			Eigen::VectorXd x;
-			x.resize( vertices.size() );
-			double solveTime = 0;
-			for( int c=0 ; c<3 ; c++ )
+			auto LowFrequencyVertexValues = [&]( unsigned int v ){ return signal[v]; };
+			if( UseEdgeDifferences.set )
 			{
-				for( int i=0 ; i<vertices.size() ; i++ ) x[i] = signal[i][c];
-				double t = timer.elapsed();
-				Eigen::VectorXd b = mass * x + stiffness * x * GradientScale.value;
-				x = solver.solve( b );
-				solveTime += timer.elapsed()-t;
-				for( int i=0 ; i<vertices.size() ; i++ ) signal[i][c] = x[i];
+				auto HighFrequencyEdgeValues = [&]( unsigned int e )
+					{
+						int v1 , v2;
+						mesh.edgeVertices( e , v1 , v2 );
+						return ( signal[v2] - signal[v1] ) * GradientScale.value;
+					};
+				signal = GradientDomain::ProcessVertexEdge< Solver , Point3D< Real > , Real >( mesh , ValueWeight.value , GradientWeight.value , LowFrequencyVertexValues , HighFrequencyEdgeValues );
 			}
-			if( Verbose.set ) std::cout << "\tSolved the system: " << timer() << ": " << systemTime << " + " << analyzeTime << " + " << factorizeTime << " + " << solveTime << std::endl;
+			else
+			{
+				auto HighFrequencyVertexValues = [&]( unsigned int v ){ return signal[v]*GradientScale.value; };
+				signal = GradientDomain::ProcessVertexVertex< Solver , Point3D< Real > , Real >( mesh , ValueWeight.value , GradientWeight.value , LowFrequencyVertexValues , HighFrequencyVertexValues );
+			}
+			if( Verbose.set ) std::cout << "\tSolved the system: " << timer() << std::endl;
 		}
 		// Compute and solve the system
 		///////////////////////////////

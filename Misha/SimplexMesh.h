@@ -33,6 +33,7 @@ DAMAGE.
 #include <functional>
 #include "Geometry.h"
 #include "SimplexBasis.h"
+#include "MultiThreading.h"
 
 template< unsigned int ... > struct SimplexMesh;
 

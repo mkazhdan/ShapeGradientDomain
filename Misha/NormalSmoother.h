@@ -36,8 +36,8 @@ DAMAGE.
 
 namespace NormalSmoother
 {
-	template< unsigned int K , typename EigenSolver=Eigen::SimplicialLLT< Eigen::SparseMatrix< double > > , unsigned int Degree=1 >
-	void Smooth( const std::vector< Point< double , K+1 > > &vertices , std::vector< Point< double , K+1 > > &normals , const std::vector< SimplexIndex< K > > &simplices , unsigned int iters , double timeStep )
+	template< unsigned int K , typename Index , typename EigenSolver=Eigen::SimplicialLLT< Eigen::SparseMatrix< double > > , unsigned int Degree=1 >
+	void Smooth( const std::vector< Point< double , K+1 > > &vertices , std::vector< Point< double , K+1 > > &normals , const std::vector< SimplexIndex< K , Index > > &simplices , unsigned int iters , double timeStep )
 	{
 		static const unsigned int Dim = K+1;
 
@@ -123,7 +123,7 @@ namespace NormalSmoother
 
 		Eigen::SparseMatrix< double > A , M , S;
 		{
-			SimplexMesh< K , Degree > sMesh = SimplexMesh< K , Degree >::template Init< Dim , unsigned int >( simplices , [&]( unsigned int v ){ return vertices[v]; } );
+			SimplexMesh< K , Degree > sMesh = SimplexMesh< K , Degree >::template Init< Dim , Index >( simplices , [&]( unsigned int v ){ return vertices[v]; } );
 			sMesh.makeUnitVolume();
 			Eigen::SparseMatrix< double > _M = sMesh.mass();
 			Eigen::SparseMatrix< double > _S = sMesh.stiffness();

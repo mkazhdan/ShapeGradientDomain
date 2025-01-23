@@ -51,7 +51,7 @@ template< unsigned int Dim , unsigned int Degree >
 template< unsigned int EmbeddingDimension , typename Index >
 void SimplexMesh< Dim , Degree >::_init( const std::vector< SimplexIndex< Dim , Index> > &simplices , VertexFunctor< EmbeddingDimension , Index > vFunction )
 {
-	std::function< SquareMatrix< double , Dim > ( unsigned int ) > gFunction = [&]( unsigned int s )
+	std::function< SquareMatrix< double , Dim > ( Index ) > gFunction = [&]( Index s )
 	{
 		Simplex< double , EmbeddingDimension , Dim > simplex;
 		for( unsigned int d=0 ; d<=Dim ; d++ ) simplex[d] = vFunction( simplices[s][d] );
@@ -119,17 +119,20 @@ Eigen::SparseMatrix< double > SimplexMesh< Dim , Degree >::system( std::function
 {
 	std::vector< Eigen::Triplet< double > > entries;
 	entries.resize( _simplices.size() * NodesPerSimplex * NodesPerSimplex );
-#pragma omp parallel for
-	for( int s=0 ; s<(int)_simplices.size() ; s++ )
-	{
-		unsigned int indices[ SimplexElements< Dim , Degree >::NodeNum ];
-		for( unsigned int i=0 ; i<SimplexElements< Dim , Degree >::NodeNum ; i++ ) indices[i] = nodeIndex( s , i );
+	ThreadPool::ParallelFor
+		(
+			0 , _simplices.size() ,
+			[&]( unsigned int , size_t s )
+			{
+				unsigned int indices[ SimplexElements< Dim , Degree >::NodeNum ];
+				for( unsigned int i=0 ; i<SimplexElements< Dim , Degree >::NodeNum ; i++ ) indices[i] = nodeIndex( (unsigned int)s , i );
 
-		SquareMatrix< double , SimplexElements< Dim , Degree >::NodeNum > M = m2s( _g[s] );
-		for( unsigned int i=0 ; i<SimplexElements< Dim , Degree >::NodeNum ; i++ )
-			for( unsigned int j=0 ; j<SimplexElements< Dim , Degree >::NodeNum ; j++ )
-				entries[ s*NodesPerSimplex*NodesPerSimplex + i * NodesPerSimplex + j ] = Eigen::Triplet< double >( indices[i] , indices[j] , M(i,j) );
-	}
+				SquareMatrix< double , SimplexElements< Dim , Degree >::NodeNum > M = m2s( _g[s] );
+				for( unsigned int i=0 ; i<SimplexElements< Dim , Degree >::NodeNum ; i++ )
+					for( unsigned int j=0 ; j<SimplexElements< Dim , Degree >::NodeNum ; j++ )
+						entries[ s*NodesPerSimplex*NodesPerSimplex + i * NodesPerSimplex + j ] = Eigen::Triplet< double >( indices[i] , indices[j] , M(i,j) );
+			}
+		);
 	Eigen::SparseMatrix< double > M( nodes() , nodes() );
 	M.setFromTriplets( entries.begin() , entries.end() );
 	return M;
@@ -315,9 +318,14 @@ template< unsigned int Dim , unsigned int Degree >
 void SimplexMesh< Dim , Degree >::hashLocalToGlobalNodeIndex( void )
 {
 	_localToGlobalNodeIndex.resize( simplices() * NodesPerSimplex );
-#pragma omp parallel for
-	for( int s=0 ; s<(int)simplices() ; s++ ) for( unsigned int n=0 , i=s*NodesPerSimplex ; n<NodesPerSimplex ; n++ , i++ )
-		_localToGlobalNodeIndex[i] = nodeIndex( nodeMultiIndex( s , n ) );
+	ThreadPool::ParallelFor
+	(
+		0 , simplices() ,
+		[&]( unsigned int , size_t s )
+		{
+			for( unsigned int n=0 , i=s*NodesPerSimplex ; n<NodesPerSimplex ; n++ , i++ ) _localToGlobalNodeIndex[i] = nodeIndex( nodeMultiIndex( s , n ) );
+		}
+	);
 }
 
 template< unsigned int Dim , unsigned int Degree >
@@ -328,19 +336,22 @@ Eigen::SparseMatrix< double > SimplexMesh< Dim , Degree >::evaluationMatrix( con
 	Polynomial::Polynomial< Dim , Degree , double > elements[ NodesPerSimplex ];
 	SimplexElements< Dim , Degree >::SetElements( elements );
 
-#pragma omp parallel for
-	for( int i=0 ; i<(int)samples.size() ; i++ )
-	{
-		unsigned int e = i * NodesPerSimplex;
-		Point< double , Dim > p;
-		for( unsigned int d=0 ; d<Dim ; d++ ) p[d] = samples[i].bcCoordinates[d+1];
-		for( unsigned int n=0 ; n<NodesPerSimplex ; n++ )
+	ThreadPool::ParallelFor
+	(
+		0 , samples.size() ,
+		[&]( unsigned int , size_t i )
 		{
-			double v = elements[n]( p );
-			unsigned int idx = nodeIndex( samples[i].sIdx , n );
-			entries[e++] = Eigen::Triplet< double >( i , idx , v );
+			unsigned int e = i * NodesPerSimplex;
+			Point< double , Dim > p;
+			for( unsigned int d=0 ; d<Dim ; d++ ) p[d] = samples[i].bcCoordinates[d+1];
+			for( unsigned int n=0 ; n<NodesPerSimplex ; n++ )
+			{
+				double v = elements[n]( p );
+				unsigned int idx = nodeIndex( samples[i].sIdx , n );
+				entries[e++] = Eigen::Triplet< double >( i , idx , v );
+			}
 		}
-	}
+	);
 	Eigen::SparseMatrix< double > E( samples.size() , nodes() );
 	E.setFromTriplets( entries.begin() , entries.end() );
 	return E;

@@ -1,0 +1,78 @@
+#ifndef CURVATURE_METRIC_INCLUDED
+#define CURVATURE_METRIC_INCLUDED
+
+#include <Eigen/Dense>
+#include <Misha/MultiThreading.h>
+#include <Misha/Geometry.h>
+#include <Misha/FEM.h>
+
+namespace CurvatureMetric
+{
+	template< typename Real , unsigned int K >
+	SquareMatrix< Real , K > SecondFundamentalForm( Simplex< Real , K+1 , K > s , const Point< Real , K+1 > n[K+1] , bool symmetric=true );
+
+	template< typename Real , typename VertexFunctor /* = std::function< Point< Real , 3 > ( unsigned int ) */ , typename NormalFunctor /* = std::function< Point< Real , 3 > ( unsigned int ) */ , typename CurvatureFunctor /* = std::function< Point< Real , 2 > ( Point< Real , 2 > ) > */ >
+	void SetCurvatureMetric( FEM::RiemannianMesh< Real > &mesh , VertexFunctor && V , NormalFunctor && N , CurvatureFunctor && F );
+
+	////////////////////
+	// Implementation //
+	////////////////////
+
+	template< typename Real , unsigned int K >
+	SquareMatrix< Real , K > SecondFundamentalForm( Simplex< Real , K+1 , K > s , const Point< Real , K+1 > n[K+1] , bool symmetric )
+	{
+		SquareMatrix< Real , K > II;
+		Point< Real , K+1 > dv[K] , dn[K];
+		for( unsigned int k=0 ; k<K ; k++ ) dv[k] = s[k+1]-s[0] , dn[k] = n[k+1]-n[0];
+		for( int i=0 ; i<K ; i++ ) for( int j=0 ; j<K ; j++ ) II( i , j ) = Point< Real , K+1 >::Dot( dv[i] , dn[j] );
+		if( symmetric ) return ( II + II.transpose() ) / (Real)2;
+		else            return II;
+	}
+
+
+	template< typename Real , typename VertexFunctor /* = std::function< Point< Real , 3 > ( unsigned int ) */ , typename NormalFunctor /* = std::function< Point< Real , 3 > ( unsigned int ) */ , typename PrincipalCurvatureFunctor /* = std::function< Point< Real , 2 > ( Point< Real , 2 > ) > */ >
+	void SetCurvatureMetric( FEM::RiemannianMesh< Real > &mesh , VertexFunctor && V , NormalFunctor && N , PrincipalCurvatureFunctor && PCF )
+	{
+		static const unsigned int K = 2;
+		static const unsigned int Dim = K+1;
+
+		static_assert( std::is_convertible_v<             VertexFunctor , std::function< Point< Real , Dim > ( unsigned int ) >    > , "[ERROR] VertexFunctor is poorly formed" );
+		static_assert( std::is_convertible_v<             NormalFunctor , std::function< Point< Real , Dim > ( unsigned int ) >    > , "[ERROR] NormalFunctor is poorly formed" );
+		static_assert( std::is_convertible_v< PrincipalCurvatureFunctor , std::function< Point< Real , K > ( Point< Real , K > ) > > , "[ERROR] PrincipalCurvatureFunctor is poorly formed" );
+
+		auto ToEigen = []( const SquareMatrix< Real , K > & M )
+			{
+				Eigen::Matrix< Real , K , K > _M;
+				for( unsigned int i=0 ; i<K ; i++ ) for( unsigned int j=0 ; j<K ; j++ ) _M(i,j) = M(j,i);
+				return _M;
+			};
+
+		auto FromEigen = []( const Eigen::Matrix< Real , K , K > & M )
+			{
+				SquareMatrix< Real , K > _M;
+				for( unsigned int i=0 ; i<K ; i++ ) for( unsigned int j=0 ; j<K ; j++ ) _M(i,j) = M(j,i);
+				return _M;
+			};
+
+		ConstPointer( SimplexIndex< K , int > ) simplices = mesh.triangles();
+		unsigned int simplexNum = (unsigned int)mesh.tCount();
+		ThreadPool::ParallelFor
+		(
+			0 , simplexNum ,
+			[&]( unsigned int , size_t i )
+			{
+				Point< Real , Dim > v[K+1] , n[K+1];
+				for( unsigned int k=0 ; k<=K ; k++ ) v[k] = V( simplices[i][k] ) , n[k] = N( simplices[i][k] );
+				SquareMatrix< Real , K > II = SecondFundamentalForm< Real , K >( Simplex< Real , Dim , K >( v ) , n );
+				Eigen::GeneralizedSelfAdjointEigenSolver< Eigen::MatrixXd > ges( ToEigen( II ) , ToEigen( mesh.g(i) ) );
+				Eigen::Matrix< Real , K  , K > D( Eigen::DiagonalMatrix< Real , K >( ges.eigenvalues() ) );
+				Point< Real , K > pCurvatures;
+				for( unsigned int k=0 ; k<K ; k++ ) pCurvatures[k] = D(k,k);
+				pCurvatures = PCF( pCurvatures );
+				for( unsigned int k=0 ; k<K ; k++ ) D(k,k) = pCurvatures[k];
+				mesh.g(i) = mesh.g(i) * FromEigen( Eigen::Matrix< Real , K , K >( ges.eigenvectors() * D * ges.eigenvectors().inverse() ) );
+			}
+		);
+	}
+};
+#endif // CURVATURE_METRIC_INCLUDED
