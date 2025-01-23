@@ -30,6 +30,8 @@ DAMAGE.
 #ifndef PLY_INCLUDED
 #define PLY_INCLUDED
 
+#define NEW_PLY
+
 #include <vector>
 #include <string>
 #include <functional>
@@ -59,37 +61,33 @@ namespace PLY
 	int DefaultFileType( void );
 
 	// PLY read functionality
-	void ReadHeader( std::string fileName , const PlyProperty *properties , int propertyNum , bool *readFlags );
-	void ReadHeader( std::string fileName , const PlyProperty *properties , int propertyNum , bool *readFlags , int &file_type );
+	int ReadHeader( std::string fileName , const PlyProperty *properties , int propertyNum , bool *readFlags );
 
 	std::vector< PlyProperty > ReadVertexHeader( std::string fileName );
 	std::vector< PlyProperty > ReadVertexHeader( std::string fileName , int &file_type );
 
 	template< typename VertexFactory , typename Index >
-	void Read( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< std::pair< Index , Index > > *edges , std::vector< std::vector< Index > > *polygons , bool *vertexPropertiesFlag=NULL );
-	template< typename VertexFactory , typename Index >
-	void Read( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< std::pair< Index , Index > > *edges , std::vector< std::vector< Index > > *polygons , bool *vertexPropertiesFlag , int &file_type , std::vector< std::string > *comments=NULL );
+	int Read( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< std::pair< Index , Index > > *edges , std::vector< std::vector< Index > > *polygons , bool *vertexPropertiesFlag=nullptr , std::vector< std::string > *comments=nullptr );
 
 	template< typename VertexFactory >
-	void ReadVertices( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , bool *vertexPropertiesFlag=NULL );
-	template< typename VertexFactory >
-	void ReadVertices( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , bool *vertexPropertiesFlag , int &file_type , std::vector< std::string > *comments=NULL );
+	int ReadVertices( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , bool *vertexPropertiesFlag=nullptr , std::vector< std::string > *comments=nullptr );
 
 	template< typename VertexFactory , typename Index >
-	void ReadTriangles( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< SimplexIndex< 2 , Index > > &triangles , bool *vertexPropertiesFlag , int &file_type , std::vector< std::string > *comments=NULL );
+	int ReadTriangles( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< SimplexIndex< 2 , Index > > &triangles , bool *vertexPropertiesFlag , std::vector< std::string > *comments=nullptr );
 	template< typename VertexFactory , typename Real , unsigned int Dim , typename Index >
-	void ReadTriangles( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< SimplexIndex< 2 , Index > > &triangles , bool *vertexPropertiesFlag , int &file_type , std::function< Point< Real , Dim > ( typename VertexFactory::VertexType ) > VertexToPointFunctor , std::vector< std::string > *comments=NULL );
+	int ReadTriangles( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< SimplexIndex< 2 , Index > > &triangles , bool *vertexPropertiesFlag , std::function< Point< Real , Dim > ( typename VertexFactory::VertexType ) > VertexToPointFunctor , std::vector< std::string > *comments=nullptr );
 
 	template< typename VertexFactory , typename Index >
-	void ReadPolygons( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< std::vector< Index > > &polygons ,  bool *readFlags=NULL );
-	template< typename VertexFactory , typename Index >
-	void ReadPolygons( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< std::vector< Index > > &polygons ,  bool *readFlags , int &file_type , std::vector< std::string > *comments=NULL );
+	int ReadPolygons( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< std::vector< Index > > &polygons ,  bool *readFlags=nullptr , std::vector< std::string > *comments=nullptr );
+
+	template< typename VertexFactory , typename Polygon >
+	int ReadPolygons( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType >& vertices , std::vector< Polygon >& polygons , bool *vertexPropertiesFlag , PlyProperty *polygonProperties , bool *polygonPropertiesFlag , int polygonPropertyNum , std::vector< std::string > *comments=nullptr );
 
 	template< typename VertexFactory , typename Index >
-	void ReadTetrahedra( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< SimplexIndex< 3 , Index > > &tetrahedra , bool *vertexPropertiesFlag , int &file_type , std::vector< std::string > *comments=NULL );
+	int ReadTetrahedra( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< SimplexIndex< 3 , Index > > &tetrahedra , bool *vertexPropertiesFlag , std::vector< std::string > *comments=nullptr );
 
 	template< typename VertexFactory , unsigned int Dim , typename Index >
-	void ReadSimplices( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< SimplexIndex< Dim , Index > > &simplices , bool *vertexPropertiesFlag , int &file_type , std::vector< std::string > *comments=NULL );
+	int ReadSimplices( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType > &vertices , std::vector< SimplexIndex< Dim , Index > > &simplices , bool *vertexPropertiesFlag , std::vector< std::string > *comments=nullptr );
 
 	// PLY write functionality
 	template< typename VertexFactory >
@@ -110,8 +108,6 @@ namespace PLY
 	template< typename VertexFactory , typename Index >
 	void WriteTetrahedra( std::string fileName , const VertexFactory &vFactory , const std::vector< typename VertexFactory::VertexType > &vertices , const std::vector< SimplexIndex< 3 , Index > > &tetrahedra , int file_type , const std::vector< std::string > *comments=NULL );
 
-	template< class VertexFactory , class Polygon >
-	int ReadPolygons( std::string fileName , const VertexFactory &vFactory , std::vector< typename VertexFactory::VertexType >& vertices , std::vector< Polygon >& polygons , bool *vertexPropertiesFlag , PlyProperty *polygonProperties , bool *polygonPropertiesFlag , int polygonPropertyNum , int& file_type , std::vector< std::string > *comments=NULL );
 }
 #include "Ply.inl"
 

@@ -130,7 +130,7 @@ int _main( void )
 	{
 		Factory factory;
 		bool *readFlags = new bool[ factory.plyReadNum() ];
-		PLY::ReadTriangles( In.value , factory , vertices , triangles , readFlags , file_type );
+		file_type = PLY::ReadTriangles( In.value , factory , vertices , triangles , readFlags );
 
 		hasNormals = factory.template plyValidReadProperties<1>( readFlags );
 		hasColors  = factory.template plyValidReadProperties<2>( readFlags );
