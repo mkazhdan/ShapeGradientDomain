@@ -77,7 +77,6 @@ Misha::CmdLineParameter< int >
 	NormalSmoothingIters( "nIters" , 0 );
 
 Misha::CmdLineReadable
-	UseEdgeDifferences( "edgeDifferences" ) ,
 	Anisotropic( "anisotropic" ) ,
 	Verbose( "verbose" );
 
@@ -93,7 +92,6 @@ Misha::CmdLineReadable* params[] =
 	&CurvatureWeight ,
 	&NormalSmoothingIters ,
 	&NormalSmoothingDiffusionTime ,
-	&UseEdgeDifferences ,
 	&Verbose ,
 	NULL
 };
@@ -112,7 +110,6 @@ void ShowUsage( const char* ex )
 	printf( "\t[--%s]\n" , Anisotropic.name.c_str() );
 	printf( "\t[--%s <signal type>=%d]\n" , Signal.name.c_str() , Signal.value );
 	for( int i=0 ; i<SIGNAL_COUNT ; i++ ) printf( "\t\t%d] %s\n" , i , SignalTypes[i].c_str() );
-	printf( "\t[--%s]\n" , UseEdgeDifferences.name.c_str() );
 	printf( "\t[--%s]\n" , Verbose.name.c_str() );
 }
 
@@ -122,12 +119,63 @@ using Solver = Eigen::PardisoLLT< Eigen::SparseMatrix< double , Eigen::ColMajor 
 using Solver = Eigen::SimplicialLLT< Eigen::SparseMatrix< double > >;
 #endif // EIGEN_USE_MKL_ALL
 
+enum{ VERTEX_POSITION , VERTEX_NORMAL , VERTEX_COLOR };
+
+using Factory = VertexFactory::Factory< float , VertexFactory::PositionFactory< float , 3 > , VertexFactory::NormalFactory< float , 3 > , VertexFactory::RGBColorFactory< float > >;
+using Vertex = typename Factory::VertexType;
+
+
+template< bool HasNormals , bool HasColors > struct OutPLY;
+
+template<>
+struct OutPLY< true , true >
+{
+	static const unsigned int NormalIndex = 1 , ColorIndex = 1;
+	using Factory = VertexFactory::Factory< float , VertexFactory::PositionFactory< float , 3 > , VertexFactory::NormalFactory< float , 3 > , VertexFactory::RGBColorFactory< float > >;
+};
+
+template<>
+struct OutPLY< true , false >
+{
+	static const unsigned int NormalIndex = 1 , ColorIndex = -1;
+	using Factory = VertexFactory::Factory< float , VertexFactory::PositionFactory< float , 3 > , VertexFactory::NormalFactory< float , 3 > >;
+};
+
+template<>
+struct OutPLY< false , true >
+{
+	static const unsigned int NormalIndex = -1 , ColorIndex = 1;
+	using Factory = VertexFactory::Factory< float , VertexFactory::PositionFactory< float , 3 > , VertexFactory::RGBColorFactory< float > >;
+};
+
+template<>
+struct OutPLY< false , false >
+{
+	static const unsigned int NormalIndex = -1 , ColorIndex = -1;
+	using Factory = VertexFactory::Factory< float , VertexFactory::PositionFactory< float , 3 > >;
+};
+
+template< bool HasNormals , bool HasColors >
+void WriteMesh( std::string fileName , const std::vector< Vertex > &vertices , const std::vector< TriangleIndex > &triangles , int file_type )
+{
+	using OutFactory = typename OutPLY< HasNormals , HasColors >::Factory;
+	using OutVertex = typename OutFactory::VertexType;
+	static const unsigned int NormalIndex = OutPLY< HasNormals , HasColors >::NormalIndex;
+	static const unsigned int ColorIndex = OutPLY< HasNormals , HasColors >::ColorIndex;
+
+	std::vector< OutVertex > outVertices( vertices.size() );
+	for( unsigned int i=0 ; i<vertices.size() ; i++ )
+	{
+		outVertices[i].template get<0>() = vertices[i].template get< VERTEX_POSITION >();
+		if constexpr( HasNormals ) outVertices[i].template get< NormalIndex >() = vertices[i].template get< VERTEX_NORMAL >();
+		if constexpr( HasColors ) outVertices[i].template get< ColorIndex >() = vertices[i].template get< VERTEX_COLOR >();
+	}
+	PLY::WriteTriangles( fileName , OutFactory() , outVertices , triangles , file_type );
+}
+
 template< class Real >
 int _main( void )
 {
-	using Factory = VertexFactory::Factory< float , VertexFactory::PositionFactory< float , 3 > , VertexFactory::NormalFactory< float , 3 > , VertexFactory::RGBColorFactory< float > >;
-	using Vertex = typename Factory::VertexType;
-
 	std::vector< TriangleIndex > triangles;
 	std::vector< Vertex > vertices;
 
@@ -144,8 +192,8 @@ int _main( void )
 		bool *readFlags = new bool[ factory.plyReadNum() ];
 		file_type = PLY::ReadTriangles( In.value , factory , vertices , triangles , readFlags );
 
-		hasNormals = factory.template plyValidReadProperties<1>( readFlags );
-		hasColors  = factory.template plyValidReadProperties<2>( readFlags );
+		hasNormals = factory.template plyValidReadProperties< VERTEX_NORMAL >( readFlags );
+		hasColors  = factory.template plyValidReadProperties< VERTEX_COLOR  >( readFlags );
 
 		// Create normals if they are not already there
 		if( !hasNormals )
@@ -153,10 +201,10 @@ int _main( void )
 			for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<1>() = Point3D< float >();
 			for( int i=0 ; i<triangles.size() ; i++ )
 			{
-				Point3D< float > n = Point3D< float >::CrossProduct( vertices[ triangles[i][1] ].template get<0>() - vertices[ triangles[i][0] ].template get<0>() , vertices[ triangles[i][2] ].template get<0>() - vertices[ triangles[i][0] ].template get<0>() );
-				for( int j=0 ; j<3 ; j++ ) vertices[ triangles[i][j] ].template get<1>() += n;
+				Point3D< float > n = Point3D< float >::CrossProduct( vertices[ triangles[i][1] ].template get< VERTEX_POSITION >() - vertices[ triangles[i][0] ].template get< VERTEX_POSITION >() , vertices[ triangles[i][2] ].template get< VERTEX_POSITION >() - vertices[ triangles[i][0] ].template get< VERTEX_POSITION >() );
+				for( int j=0 ; j<3 ; j++ ) vertices[ triangles[i][j] ].template get< VERTEX_NORMAL >() += n;
 			}
-			for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<1>() /= Point< float , 3 >::Length( vertices[i].template get<1>() );
+			for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get< VERTEX_NORMAL >() /= Point< float , 3 >::Length( vertices[i].template get<1>() );
 		}
 
 		if( Signal.value==SIGNAL_NORMAL ) hasNormals = true;
@@ -210,7 +258,7 @@ int _main( void )
 			CurvatureMetric::SetCurvatureMetric
 			(
 				mesh ,
-				[&]( unsigned int idx ){ return Point< Real , 3 >( vertices[idx].template get<0>() ) * s; } ,
+				[&]( unsigned int idx ){ return Point< Real , 3 >( vertices[idx].template get< VERTEX_POSITION >() ) * s; } ,
 				[&]( unsigned int idx ){ return Point< Real , 3 >( curvatureNormals[idx] ); } ,
 				PrincipalCurvatureFunctor
 			);
@@ -227,10 +275,10 @@ int _main( void )
 	std::vector< Point3D< Real > > signal( vertices.size() );
 	switch( Signal.value )
 	{
-	case SIGNAL_VERTEX: for( int i=0 ; i<vertices.size() ; i++ ) signal[i] = Point3D< Real >( vertices[i].template get<0>() ) ; break;
+	case SIGNAL_VERTEX: for( int i=0 ; i<vertices.size() ; i++ ) signal[i] = Point3D< Real >( vertices[i].template get< VERTEX_POSITION >() ) ; break;
 	case SIGNAL_NORMAL_TO_VERTEX:
-	case SIGNAL_NORMAL: for( int i=0 ; i<vertices.size() ; i++ ) signal[i] = Point3D< Real >( vertices[i].template get<1>() ) ; break;
-	case SIGNAL_COLOR : for( int i=0 ; i<vertices.size() ; i++ ) signal[i] = Point3D< Real >( vertices[i].template get<2>() ) ; break;
+	case SIGNAL_NORMAL: for( int i=0 ; i<vertices.size() ; i++ ) signal[i] = Point3D< Real >( vertices[i].template get< VERTEX_NORMAL   >() ) ; break;
+	case SIGNAL_COLOR : for( int i=0 ; i<vertices.size() ; i++ ) signal[i] = Point3D< Real >( vertices[i].template get< VERTEX_COLOR    >() ) ; break;
 	default: ERROR_OUT( "Unrecognized signal type: " , Signal.value );
 	}
 	// Set the data
@@ -244,23 +292,11 @@ int _main( void )
 		{
 			// Low frequencies described in terms of values at vertices
 			auto LowFrequencyVertexValues = [&]( unsigned int v ){ return signal[v]; };
-			if( UseEdgeDifferences.set )
-			{
-				// High frequencies described in terms of differences along edges
-				auto HighFrequencyEdgeValues = [&]( unsigned int e )
-					{
-						int v1 , v2;
-						mesh.edgeVertices( e , v1 , v2 );
-						return ( signal[v2] - signal[v1] ) * GradientScale.value;
-					};
-				signal = GradientDomain::ProcessVertexEdge< Solver , Point3D< Real > , Real >( mesh , (Real)1. , GradientWeight.value , LowFrequencyVertexValues , HighFrequencyEdgeValues );
-			}
-			else
-			{
-				// High frequencies described in terms of values at vertices
-				auto HighFrequencyVertexValues = [&]( unsigned int v ){ return signal[v]*GradientScale.value; };
-				signal = GradientDomain::ProcessVertexVertex< Solver , Point3D< Real > , Real >( mesh , (Real)1. , GradientWeight.value , LowFrequencyVertexValues , HighFrequencyVertexValues );
-			}
+
+			// High frequencies described in terms of scaled values at vertices
+			auto HighFrequencyVertexValues = [&]( unsigned int v ){ return signal[v]*GradientScale.value; };
+
+			signal = GradientDomain::ProcessVertexVertex< Solver , Point3D< Real > , Real >( mesh , (Real)1. , GradientWeight.value , LowFrequencyVertexValues , HighFrequencyVertexValues );
 		}
 		if( Verbose.set ) std::cout << pMeter( "Processed" ) << std::endl;
 	}
@@ -272,20 +308,7 @@ int _main( void )
 	if( Signal.value==SIGNAL_NORMAL_TO_VERTEX )
 	{
 		pMeter.reset();
-		// Low frequencies given by the original vertex positions
-		auto LowFrequencyVertexValues = [&]( unsigned int v ){ return vertices[v].template get<0>(); };
-
-		// High frequencies given projection of edge offset onto the normal plane
-		auto HighFrequencyEdgeValues = [&]( unsigned int e )
-			{
-				int v1 , v2;
-				mesh.edgeVertices( e , v1 , v2 );
-				Point< Real , 3 > d = vertices[v2].template get<0>() - vertices[v1].template get<0>();
-				Point< Real , 3 > n = signal[v2] + signal[v1];
-				return d - Point< Real , 3 >::Dot( d , n ) / Point< Real , 3 >::SquareNorm( n ) * n;
-			};
-
-		signal = GradientDomain::ProcessVertexEdge< Solver , Point3D< Real > , Real >( mesh , 1. , NormalProjectionWeight.value , LowFrequencyVertexValues , HighFrequencyEdgeValues );
+		signal = GradientDomain::FitToNormals< Solver >( mesh , (Real)1. , (Real)NormalProjectionWeight.value , [&]( unsigned int v ){ return vertices[v].template get< VERTEX_POSITION >(); } , [&]( unsigned int v ){ return signal[v]; } );
 		if( Verbose.set ) std::cout << pMeter( "Fit geometry" ) << std::endl;
 	}
 	// Fit the geometry to the normals
@@ -296,9 +319,9 @@ int _main( void )
 	switch( Signal.value )
 	{
 	case SIGNAL_NORMAL_TO_VERTEX:
-	case SIGNAL_VERTEX: for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<0>() = Point3D< float >( signal[i] ) ; break;
-	case SIGNAL_NORMAL: for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<1>() = Point3D< float >( signal[i] ) ; break;
-	case SIGNAL_COLOR : for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<2>() = Point3D< float >( signal[i] ) ; break;
+	case SIGNAL_VERTEX: for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get< VERTEX_POSITION >() = Point3D< float >( signal[i] ) ; break;
+	case SIGNAL_NORMAL: for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get< VERTEX_NORMAL   >() = Point3D< float >( signal[i] ) ; break;
+	case SIGNAL_COLOR : for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get< VERTEX_COLOR    >() = Point3D< float >( signal[i] ) ; break;
 	default: ERROR_OUT( "Unrecognized singal type: " , Signal.value );
 	}
 	// Copy the processed signal to the vertices
@@ -308,34 +331,10 @@ int _main( void )
 	// Output the result
 	if( Out.set )
 	{
-		if( hasColors && hasNormals ) PLY::WriteTriangles( Out.value , Factory() , vertices , triangles , file_type );
-		else if( hasColors )
-		{
-			using Factory = VertexFactory::Factory< float , VertexFactory::PositionFactory< float , 3 > , VertexFactory::RGBColorFactory< float > >;
-			using Vertex = typename Factory::VertexType;
-
-			std::vector< Vertex > _vertices( vertices.size() );
-			for( unsigned int i=0 ; i<vertices.size() ; i++ ) _vertices[i].template get<0>() = vertices[i].template get<0>() , _vertices[i].template get<1>() = vertices[i].template get<2>();
-			PLY::WriteTriangles( Out.value , Factory() , _vertices , triangles , file_type );
-		}
-		else if( hasNormals )
-		{
-			using Factory = VertexFactory::Factory< float , VertexFactory::PositionFactory< float , 3 > , VertexFactory::NormalFactory< float , 3 > >;
-			using Vertex = typename Factory::VertexType;
-
-			std::vector< Vertex > _vertices( vertices.size() );
-			for( unsigned int i=0 ; i<vertices.size() ; i++ ) _vertices[i].template get<0>() = vertices[i].template get<0>() , _vertices[i].template get<1>() = vertices[i].template get<1>();
-			PLY::WriteTriangles( Out.value , Factory() , _vertices , triangles , file_type );
-		}
-		else
-		{
-			using Factory = VertexFactory::PositionFactory< float , 3 >;
-			using Vertex = typename Factory::VertexType;
-
-			std::vector< Vertex > _vertices( vertices.size() );
-			for( unsigned int i=0 ; i<vertices.size() ; i++ ) _vertices[i] = vertices[i].template get<0>();
-			PLY::WriteTriangles( Out.value , Factory() , _vertices , triangles , file_type );
-		}
+		if( hasColors && hasNormals ) WriteMesh< true  , true  >( Out.value , vertices , triangles , file_type );
+		else if( hasColors )          WriteMesh< false , true  >( Out.value , vertices , triangles , file_type );
+		else if( hasNormals )         WriteMesh< true  , false >( Out.value , vertices , triangles , file_type );
+		else                          WriteMesh< false , false >( Out.value , vertices , triangles , file_type );
 	}
 	// Output the result
 	////////////////////

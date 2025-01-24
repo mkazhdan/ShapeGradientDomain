@@ -8,6 +8,9 @@
 
 namespace GradientDomain
 {
+	template< typename EigenSolver , typename Real , typename VertexFunctor /* = std::function< Point< Real , 3 >( unsigned int ) > */ , typename NormalFunctor /* = std::function< Point< Real , 3 >( unsigned int ) > */ >
+	std::vector< Point< Real , 3 > > FitToNormals( const FEM::RiemannianMesh< Real > &mesh , Real vWeight , Real nWeight , VertexFunctor && V , NormalFunctor && N );
+
 	template< typename EigenSolver , typename T , typename Real , typename LowFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ , typename HighFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ >
 	std::vector< T > ProcessVertexVertex( const FEM::RiemannianMesh< Real > &mesh , Real lowWeight , Real highWeight , LowFrequencyVertexFunctor && Low , HighFrequencyVertexFunctor && High );
 
@@ -112,6 +115,27 @@ namespace GradientDomain
 		std::vector< T > out( mesh.vCount() );
 		_Solve< 0 >( solver , mass , divergence , std::forward< LowFrequencyVertexFunctor >( Low ) , std::forward< HighFrequencyEdgeFunctor >( High ) , out );
 		return out;
+	}
+
+	template< typename EigenSolver , typename Real , typename VertexFunctor /* = std::function< Point< Real , 3 >( unsigned int ) > */ , typename NormalFunctor /* = std::function< Point< Real , 3 >( unsigned int ) > */ >
+	std::vector< Point< Real , 3 > > FitToNormals( const FEM::RiemannianMesh< Real > &mesh , Real vWeight , Real nWeight , VertexFunctor && V , NormalFunctor && N )
+	{
+		static_assert( std::is_convertible_v< VertexFunctor , std::function< Point< Real , 3 > ( unsigned int ) > > , "[ERROR] VertexFunctor is poorly formed" );
+		static_assert( std::is_convertible_v< NormalFunctor , std::function< Point< Real , 3 > ( unsigned int ) > > , "[ERROR] NormalFunctor is poorly formed" );
+
+		auto LowFrequencyVertexValues = [&]( unsigned int v ){ return V(v); };
+
+		// High frequencies given projection of edge offset onto the normal plane
+		auto HighFrequencyEdgeValues = [&]( unsigned int e )
+			{
+				int v1 , v2;
+				mesh.edgeVertices( e , v1 , v2 );
+				Point< Real , 3 > d = V(v2) - V(v1);
+				Point< Real , 3 > n = N(v2) + N(v1);
+				return d - Point< Real , 3 >::Dot( d , n ) / Point< Real , 3 >::SquareNorm( n ) * n;
+			};
+
+		return ProcessVertexEdge< EigenSolver , Point3D< Real > , Real >( mesh , vWeight , nWeight , LowFrequencyVertexValues , HighFrequencyEdgeValues );
 	}
 
 };
