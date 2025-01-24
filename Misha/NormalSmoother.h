@@ -64,24 +64,22 @@ namespace NormalSmoother
 		void set( Point< double , Dim > n )
 		{
 			Point< double , Dim > frame[Dim];
-			{
-				frame[0] = n;
+			frame[0] = n;
 
-				for( unsigned int d=1 ; d<Dim-1 ; d++ )
+			for( unsigned int d=1 ; d<Dim-1 ; d++ )
+			{
+				frame[d] = RandomSpherePoint< double , Dim >();
+				while( true )
 				{
-					frame[d] = RandomSpherePoint< double , Dim >();
-					while( true )
+					for( unsigned int dd=0 ; dd<d ; dd++ ) frame[d] -= Point< double , Dim >::Dot( frame[dd] , frame[d] ) * frame[dd];
+					if( frame[d].squareNorm()>1e-10 )
 					{
-						for( unsigned int dd=0 ; dd<d ; dd++ ) frame[d] -= Point< double , Dim >::Dot( frame[dd] , frame[d] ) * frame[dd];
-						if( frame[d].squareNorm()>1e-10 )
-						{
-							frame[d] /= sqrt( frame[d].squareNorm() );
-							break;
-						}
+						frame[d] /= sqrt( frame[d].squareNorm() );
+						break;
 					}
 				}
-				frame[Dim-1] = Point< double , Dim >::CrossProduct( frame );
 			}
+			frame[Dim-1] = Point< double , Dim >::CrossProduct( frame );
 			for( unsigned int k=0 ; k<K ; k++ ) t[k] = frame[k+1];
 		}
 	};
