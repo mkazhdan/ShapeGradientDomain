@@ -46,7 +46,7 @@ where &gamma; is the diffusion weight.<br>
 
 <P>In the case that the signal processed describes the vertices' normals, we also support fitting the original geometry to the processed normals using the approach of [<A HREF="https://dl.acm.org/doi/10.1145/1015706.1015774">Yu et al. 2004</A>]. Given input positions <I>F</I> and a target normal field <I>N</I> This amounts to minimizing:<br>
 <CENTER>
-<I>E</I>(<I>G</I>) = ||<I>F</I>-<I>G</I>||<sup>2</sup> + &delta;&sdot;||&nabla;<I>G</I> - (&nabla;<I>F</I> - <I>N</I>&sdot;&#10216;&nabla;<I>F</I>,<I>N</I>&#10217;)||<sup>2</sup>
+<I>E</I>(<I>G</I>) = ||<I>F</I>-<I>G</I>||<sup>2</sup> + &delta;&sdot;||(&nabla;<I>F</I> - <I>N</I>&sdot;&#10216;&nabla;<I>F</I>,<I>N</I>&#10217;) - &nabla;<I>G</I>||<sup>2</sup>
 </CENTER><BR>
 where &delta; is the projected gradient fitting weight weight.<br>
 
