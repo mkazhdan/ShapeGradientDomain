@@ -30,8 +30,6 @@ DAMAGE.
 #ifndef PLY_INCLUDED
 #define PLY_INCLUDED
 
-#define NEW_PLY
-
 #include <vector>
 #include <string>
 #include <functional>

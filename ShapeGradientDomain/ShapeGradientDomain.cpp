@@ -50,35 +50,46 @@ DAMAGE.
 #include <Include/CurvatureMetric.h>
 #include <Include/GradientDomain.h>
 
+
+enum
+{
+	SIGNAL_VERTEX ,
+	SIGNAL_NORMAL ,
+	SIGNAL_COLOR ,
+	SIGNAL_NORMAL_TO_VERTEX ,
+	SIGNAL_COUNT
+};
+const std::string SignalTypes[] = { std::string( "vertex" ) , std::string( "normal" ) , std::string( "color" ) , std::string( "normal to vertex" ) };
+
 Misha::CmdLineParameter< std::string >
 	In( "in" ) ,
 	Out( "out" );
 
 Misha::CmdLineParameter< float >
-	NormalSmoothingDiffusionTime( "nTime" , 1e-4f ) ,
 	CurvatureWeight( "kWeight" , 0.f ) ,
-	ValueWeight( "vWeight" , 1.f ) ,
+	NormalSmoothingDiffusionTime( "nTime" , 1e-3f ) ,
 	GradientWeight( "gWeight" , 1e-4f ) ,
-	GradientScale( "gScale" , 1.f );
+	GradientScale( "gScale" , 1.f ) ,
+	NormalProjectionWeight( "npWeight" , 1e-3f );
 
 Misha::CmdLineParameter< int >
+	Signal( "signal" , SIGNAL_VERTEX ) ,
 	NormalSmoothingIters( "nIters" , 0 );
 
 Misha::CmdLineReadable
 	UseEdgeDifferences( "edgeDifferences" ) ,
 	Anisotropic( "anisotropic" ) ,
-	UseColors( "useColors" ) ,
 	Verbose( "verbose" );
 
 Misha::CmdLineReadable* params[] =
 {
 	&In ,
 	&Out ,
-	&ValueWeight ,
 	&GradientWeight ,
 	&GradientScale ,
+	&NormalProjectionWeight ,
 	&Anisotropic ,
-	&UseColors ,
+	&Signal ,
 	&CurvatureWeight ,
 	&NormalSmoothingIters ,
 	&NormalSmoothingDiffusionTime ,
@@ -92,15 +103,16 @@ void ShowUsage( const char* ex )
 	printf( "Usage %s:\n" , ex );
 	printf( "\t --%s <input geometry>\n" , In.name.c_str() );
 	printf( "\t[--%s <output geometry>]\n" , Out.name.c_str() );
-	printf( "\t[--%s <value weight>=%f]\n" , ValueWeight.name.c_str() , ValueWeight.value );
-	printf( "\t[--%s <gradient weight>=%f]\n" , GradientWeight.name.c_str() , GradientWeight.value );
-	printf( "\t[--%s <gradient scale>=%f]\n" , GradientScale.name.c_str() , GradientScale.value );
-	printf( "\t[--%s <curvature weight>=%f]\n" , CurvatureWeight.name.c_str() , CurvatureWeight.value );
 	printf( "\t[--%s <normal smoothing iterations>=%d]\n" , NormalSmoothingIters.name.c_str() , NormalSmoothingIters.value );
 	printf( "\t[--%s <normal smoothing diffusion time>=%g]\n" , NormalSmoothingDiffusionTime.name.c_str() , NormalSmoothingDiffusionTime.value );
+	printf( "\t[--%s <gradient weight>=%g]\n" , GradientWeight.name.c_str() , GradientWeight.value );
+	printf( "\t[--%s <gradient scale>=%g]\n" , GradientScale.name.c_str() , GradientScale.value );
+	printf( "\t[--%s <curvature weight>=%f]\n" , CurvatureWeight.name.c_str() , CurvatureWeight.value );
+	printf( "\t[--%s <normal projection weight>=%g]\n" , NormalProjectionWeight.name.c_str() , NormalProjectionWeight.value );
 	printf( "\t[--%s]\n" , Anisotropic.name.c_str() );
+	printf( "\t[--%s <signal type>=%d]\n" , Signal.name.c_str() , Signal.value );
+	for( int i=0 ; i<SIGNAL_COUNT ; i++ ) printf( "\t\t%d] %s\n" , i , SignalTypes[i].c_str() );
 	printf( "\t[--%s]\n" , UseEdgeDifferences.name.c_str() );
-	printf( "\t[--%s]\n" , UseColors.name.c_str() );
 	printf( "\t[--%s]\n" , Verbose.name.c_str() );
 }
 
@@ -109,9 +121,6 @@ using Solver = Eigen::PardisoLLT< Eigen::SparseMatrix< double , Eigen::ColMajor 
 #else // !EIGEN_USE_MKL_ALL
 using Solver = Eigen::SimplicialLLT< Eigen::SparseMatrix< double > >;
 #endif // EIGEN_USE_MKL_ALL
-
-template< class Real > Real Clamp( Real v , Real min , Real max ){ return std::min< Real >( max , std::max< Real >( min , v ) ); }
-template< class Real > Point3D< Real > ClampColor( Point3D< Real > c ){ return Point3D< Real >( Clamp( c[0] , (Real)0 , (Real)255 ) , Clamp( c[1] , (Real)0 , (Real)255 ) , Clamp( c[2] , (Real)0 , (Real)255 ) ); }
 
 template< class Real >
 int _main( void )
@@ -125,8 +134,11 @@ int _main( void )
 	int file_type;
 	bool hasNormals , hasColors;
 
+	Miscellany::PerformanceMeter pMeter( '.' );
+
 	//////////////////////
 	// Read in the data //
+	pMeter.reset();
 	{
 		Factory factory;
 		bool *readFlags = new bool[ factory.plyReadNum() ];
@@ -135,6 +147,7 @@ int _main( void )
 		hasNormals = factory.template plyValidReadProperties<1>( readFlags );
 		hasColors  = factory.template plyValidReadProperties<2>( readFlags );
 
+		// Create normals if they are not already there
 		if( !hasNormals )
 		{
 			for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<1>() = Point3D< float >();
@@ -145,50 +158,46 @@ int _main( void )
 			}
 			for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<1>() /= Point< float , 3 >::Length( vertices[i].template get<1>() );
 		}
-		if( !hasColors ) for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<2>() = ( Point3D< float >( 1.f , 1.f , 1.f ) + vertices[i].template get<1>() ) / 2.f;
+
+		if( Signal.value==SIGNAL_NORMAL ) hasNormals = true;
+		if( Signal.value==SIGNAL_COLOR && !hasColors ) ERROR_OUT( "No color channel specified" );
 		delete[] readFlags;
 		if( Verbose.set ) std::cout << "Source Vertices / Triangles: " << vertices.size() << " / " << triangles.size() << std::endl;
 	}
+	if( Verbose.set ) std::cout << pMeter( "Read mesh" ) << std::endl;
 	// Read in the data //
 	//////////////////////
 
-	///////////////////
-	// Normal smoothing
-	if( NormalSmoothingIters.value>0 && NormalSmoothingDiffusionTime.value>0 )
+	///////////////////////////////////////
+	// Set (and adjust) the Riemannian mesh
+	pMeter.reset();
+	FEM::RiemannianMesh< Real > mesh( GetPointer( triangles ) , triangles.size() );
 	{
-		Miscellany::Timer timer;
-		std::vector< Point3D< Real > > v( vertices.size() ) , n( vertices.size() );
-		for( unsigned int i=0 ; i<vertices.size() ; i++ ) v[i] = vertices[i].template get<0>() , n[i] = vertices[i].template get<1>();
-		NormalSmoother::Smooth< 2 , int , Solver >( v , n , triangles , NormalSmoothingIters.value , NormalSmoothingDiffusionTime.value );
-		for( unsigned int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<1>() = n[i];
-		if( Verbose.set ) std::cout << "\tSmoothed normals: " << timer() << std::endl;
-	}
-	// Normal smoothing
-	///////////////////
-	
-	std::vector< Point3D< Real > > signal( vertices.size() );
-
-	//////////////////
-	// Set the data //
-	if( UseColors.set ) for( int i=0 ; i<vertices.size() ; i++ ) signal[i] = Point3D< Real >( vertices[i].template get<2>() );
-	else                for( int i=0 ; i<vertices.size() ; i++ ) signal[i] = Point3D< Real >( vertices[i].template get<0>() );
-	// Set the data //
-	//////////////////
-
-	////////////////////
-	// Smooth the signal
-	{
-		// Read in the mesh and normalize the scale
-		FEM::RiemannianMesh< Real > mesh( GetPointer( triangles ) , triangles.size() );
+		// Create the embedded metric and normalize to have unit are
 		mesh.template setMetricFromEmbedding< 3 >( [&]( unsigned int i ){ return vertices[i].template get<0>(); } );
 		Real area = mesh.area();
 		mesh.makeUnitArea();
 
-		////////////////////
-		// Modify the metric
+		// Adjust the metric to take into account the curvature
 		if( CurvatureWeight.value>0 )
 		{
-			Miscellany::Timer timer;
+			Miscellany::PerformanceMeter pMeter( '.' );
+			std::vector< Point< Real , 3 > > curvatureNormals( vertices.size() );
+			for( unsigned int i=0 ; i<vertices.size() ; i++ ) curvatureNormals[i] = vertices[i].template get<1>();
+
+			///////////////////
+			// Normal smoothing
+			if( NormalSmoothingIters.value>0 && NormalSmoothingDiffusionTime.value>0 )
+			{
+				NormalSmoother::Smooth< 2 , Solver >( mesh.template massMatrix< FEM::BASIS_0_WHITNEY , true >() , mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY , true >() , curvatureNormals , NormalSmoothingIters.value , NormalSmoothingDiffusionTime.value );
+				if( Verbose.set ) std::cout << pMeter( "Normal smoothing" ) << std::endl;
+			}
+			// Normal smoothing
+			///////////////////
+
+			// Input: Principal curvature values
+			// Output: Positive entries of the diagonal matrix describing the scaling along the principal curvature directions
+			//         Outputting the identity matrix reproduces the embedding metric
 			auto PrincipalCurvatureFunctor = [&]( Point< Real , 2 > pCurvatures )
 				{
 					pCurvatures[0] *= pCurvatures[0];
@@ -196,53 +205,103 @@ int _main( void )
 					if( !Anisotropic.set ) pCurvatures[0] = pCurvatures[1] = ( pCurvatures[0] + pCurvatures[1] ) / (Real)2.;
 					return Point< Real , 2 >( (Real)1. , (Real)1. ) + pCurvatures * CurvatureWeight.value;
 				};
+
 			Real s = (Real)(1./sqrt(area) );
 			CurvatureMetric::SetCurvatureMetric
 			(
 				mesh ,
 				[&]( unsigned int idx ){ return Point< Real , 3 >( vertices[idx].template get<0>() ) * s; } ,
-				[&]( unsigned int idx ){ return Point< Real , 3 >( vertices[idx].template get<1>() ); } ,
+				[&]( unsigned int idx ){ return Point< Real , 3 >( curvatureNormals[idx] ); } ,
 				PrincipalCurvatureFunctor
 			);
-			if( Verbose.set ) std::cout << "\tUpdated metric: " << timer() << std::endl;
+			if( Verbose.set ) std::cout << pMeter( "Metric update" ) << std::endl;
 		}
-		// Modify the metric
-		////////////////////
+	}
+	if( Verbose.set ) std::cout << pMeter( "Riemannian mesh" ) << std::endl;
+	// Set (and adjust) the Riemannian mesh
+	///////////////////////////////////////
 
-		///////////////////////////////
-		// Compute and solve the system
+
+	///////////////
+	// Set the data
+	std::vector< Point3D< Real > > signal( vertices.size() );
+	switch( Signal.value )
+	{
+	case SIGNAL_VERTEX: for( int i=0 ; i<vertices.size() ; i++ ) signal[i] = Point3D< Real >( vertices[i].template get<0>() ) ; break;
+	case SIGNAL_NORMAL_TO_VERTEX:
+	case SIGNAL_NORMAL: for( int i=0 ; i<vertices.size() ; i++ ) signal[i] = Point3D< Real >( vertices[i].template get<1>() ) ; break;
+	case SIGNAL_COLOR : for( int i=0 ; i<vertices.size() ; i++ ) signal[i] = Point3D< Real >( vertices[i].template get<2>() ) ; break;
+	default: ERROR_OUT( "Unrecognized signal type: " , Signal.value );
+	}
+	// Set the data
+	///////////////
+
+	////////////////////
+	// Smooth the signal
+	if( GradientWeight.value>0 && GradientScale.value!=1 )
+	{
+		pMeter.reset();
 		{
-			Miscellany::Timer timer;
-
+			// Low frequencies described in terms of values at vertices
 			auto LowFrequencyVertexValues = [&]( unsigned int v ){ return signal[v]; };
 			if( UseEdgeDifferences.set )
 			{
+				// High frequencies described in terms of differences along edges
 				auto HighFrequencyEdgeValues = [&]( unsigned int e )
 					{
 						int v1 , v2;
 						mesh.edgeVertices( e , v1 , v2 );
 						return ( signal[v2] - signal[v1] ) * GradientScale.value;
 					};
-				signal = GradientDomain::ProcessVertexEdge< Solver , Point3D< Real > , Real >( mesh , ValueWeight.value , GradientWeight.value , LowFrequencyVertexValues , HighFrequencyEdgeValues );
+				signal = GradientDomain::ProcessVertexEdge< Solver , Point3D< Real > , Real >( mesh , (Real)1. , GradientWeight.value , LowFrequencyVertexValues , HighFrequencyEdgeValues );
 			}
 			else
 			{
+				// High frequencies described in terms of values at vertices
 				auto HighFrequencyVertexValues = [&]( unsigned int v ){ return signal[v]*GradientScale.value; };
-				signal = GradientDomain::ProcessVertexVertex< Solver , Point3D< Real > , Real >( mesh , ValueWeight.value , GradientWeight.value , LowFrequencyVertexValues , HighFrequencyVertexValues );
+				signal = GradientDomain::ProcessVertexVertex< Solver , Point3D< Real > , Real >( mesh , (Real)1. , GradientWeight.value , LowFrequencyVertexValues , HighFrequencyVertexValues );
 			}
-			if( Verbose.set ) std::cout << "\tSolved the system: " << timer() << std::endl;
 		}
-		// Compute and solve the system
-		///////////////////////////////
+		if( Verbose.set ) std::cout << pMeter( "Processed" ) << std::endl;
 	}
 	// Smooth the signal
 	////////////////////
 
+	//////////////////////////////////
+	// Fit the geometry to the normals
+	if( Signal.value==SIGNAL_NORMAL_TO_VERTEX )
+	{
+		pMeter.reset();
+		// Low frequencies given by the original vertex positions
+		auto LowFrequencyVertexValues = [&]( unsigned int v ){ return vertices[v].template get<0>(); };
+
+		// High frequencies given projection of edge offset onto the normal plane
+		auto HighFrequencyEdgeValues = [&]( unsigned int e )
+			{
+				int v1 , v2;
+				mesh.edgeVertices( e , v1 , v2 );
+				Point< Real , 3 > d = vertices[v2].template get<0>() - vertices[v1].template get<0>();
+				Point< Real , 3 > n = signal[v2] + signal[v1];
+				return d - Point< Real , 3 >::Dot( d , n ) / Point< Real , 3 >::SquareNorm( n ) * n;
+			};
+
+		signal = GradientDomain::ProcessVertexEdge< Solver , Point3D< Real > , Real >( mesh , 1. , NormalProjectionWeight.value , LowFrequencyVertexValues , HighFrequencyEdgeValues );
+		if( Verbose.set ) std::cout << pMeter( "Fit geometry" ) << std::endl;
+	}
+	// Fit the geometry to the normals
+	//////////////////////////////////
+
 	////////////////////////////////////////////
 	// Copy the processed signal to the vertices
-	if( UseColors.set ){ hasColors = true ; for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<2>() = ClampColor( Point3D< float >( signal[i] ) ); }
-	else                                    for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<0>() = Point3D< float >( signal[i] );
-	// Copy the processedsignal to the vertices
+	switch( Signal.value )
+	{
+	case SIGNAL_NORMAL_TO_VERTEX:
+	case SIGNAL_VERTEX: for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<0>() = Point3D< float >( signal[i] ) ; break;
+	case SIGNAL_NORMAL: for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<1>() = Point3D< float >( signal[i] ) ; break;
+	case SIGNAL_COLOR : for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get<2>() = Point3D< float >( signal[i] ) ; break;
+	default: ERROR_OUT( "Unrecognized singal type: " , Signal.value );
+	}
+	// Copy the processed signal to the vertices
 	////////////////////////////////////////////
 
 	////////////////////
@@ -291,5 +350,6 @@ int main( int argc , char* argv[] )
 		ShowUsage( argv[0] );
 		return EXIT_FAILURE;
 	}
+
 	return _main< double >();
 }
