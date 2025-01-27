@@ -109,9 +109,9 @@ void ShowUsage( const char* ex )
 	printf( "\t[--%s <gradient scale>=%g]\n" , GradientScale.name.c_str() , GradientScale.value );
 	printf( "\t[--%s <curvature weight>=%f]\n" , CurvatureWeight.name.c_str() , CurvatureWeight.value );
 	printf( "\t[--%s <normal projection weight>=%g]\n" , NormalProjectionWeight.name.c_str() , NormalProjectionWeight.value );
-	printf( "\t[--%s]\n" , Anisotropic.name.c_str() );
 	printf( "\t[--%s <signal type>=%d]\n" , Signal.name.c_str() , Signal.value );
 	for( int i=0 ; i<static_cast< int >( SignalType::COUNT ) ; i++ ) printf( "\t\t%d] %s\n" , i , SignalNames[i].c_str() );
+	printf( "\t[--%s]\n" , Anisotropic.name.c_str() );
 	printf( "\t[--%s]\n" , HarmonicNormalSmoothing.name.c_str() );
 	printf( "\t[--%s]\n" , Verbose.name.c_str() );
 }
