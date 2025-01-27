@@ -45,6 +45,19 @@ namespace GradientDomain
 	template< typename EigenSolver , typename T , typename Real , typename LowFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ , typename HighFrequencyEdgeFunctor /* = std::function< T ( unsigned int ) > */ >
 	std::vector< T > ProcessVertexEdge( const FEM::RiemannianMesh< Real > &mesh , Real lowWeight , Real highWeight , LowFrequencyVertexFunctor && Low , HighFrequencyEdgeFunctor && High );
 
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	// Variants of the above with a solver for which symbolic factorization has already been performed
+	template< typename EigenSolver , typename Real , typename VertexFunctor /* = std::function< Point< Real , 3 >( unsigned int ) > */ , typename NormalFunctor /* = std::function< Point< Real , 3 >( unsigned int ) > */ >
+	std::vector< Point< Real , 3 > > FitToNormals( EigenSolver & solver , const FEM::RiemannianMesh< Real > &mesh , Real vWeight , Real nWeight , VertexFunctor && V , NormalFunctor && N );
+
+	template< typename EigenSolver , typename T , typename Real , typename LowFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ , typename HighFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ >
+	std::vector< T > ProcessVertexVertex( EigenSolver & solver , const FEM::RiemannianMesh< Real > &mesh , Real lowWeight , Real highWeight , LowFrequencyVertexFunctor && Low , HighFrequencyVertexFunctor && High );
+
+	template< typename EigenSolver , typename T , typename Real , typename LowFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ , typename HighFrequencyEdgeFunctor /* = std::function< T ( unsigned int ) > */ >
+	std::vector< T > ProcessVertexEdge( EigenSolver & solver , const FEM::RiemannianMesh< Real > &mesh , Real lowWeight , Real highWeight , LowFrequencyVertexFunctor && Low , HighFrequencyEdgeFunctor && High );
+	// Variants of the above with a solver for which symbolic factorization has already been performed
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+
 	////////////////////
 	// Implementation //
 	////////////////////
@@ -111,7 +124,7 @@ namespace GradientDomain
 	}
 
 	template< typename EigenSolver , typename T , typename Real , typename LowFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ , typename HighFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ >
-	std::vector< T > ProcessVertexVertex( const FEM::RiemannianMesh< Real > &mesh , Real lowWeight , Real highWeight , LowFrequencyVertexFunctor && Low , HighFrequencyVertexFunctor && High )
+	std::vector< T > _ProcessVertexVertex( EigenSolver & solver , const FEM::RiemannianMesh< Real > &mesh , Real lowWeight , Real highWeight , LowFrequencyVertexFunctor && Low , HighFrequencyVertexFunctor && High , bool preAnalyzed )
 	{
 		static_assert( Array< T >::Dim , "[ERROR] T is not of array type" );
 		static_assert( std::is_convertible_v< LowFrequencyVertexFunctor , std::function< T ( unsigned int ) > > , "[ERROR] LowFrequencyVertexFunctor is poorly formed" );
@@ -120,15 +133,30 @@ namespace GradientDomain
 		Eigen::SparseMatrix< Real > mass = mesh.template massMatrix< FEM::BASIS_0_WHITNEY , true >() * lowWeight;
 		Eigen::SparseMatrix< Real > stiffness = mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY , true >() * highWeight;
 
-		EigenSolver solver( mass + stiffness );
+		if( preAnalyzed ) solver.factorize( mass + stiffness );
+		else              solver.compute  ( mass + stiffness );
+		if( solver.info()!=Eigen::Success ) ERROR_OUT( "Failed to factorize matrix" );
 
 		std::vector< T > out( mesh.vCount() );
 		_Solve< 0 >( solver , mass , stiffness , std::forward< LowFrequencyVertexFunctor >( Low ) , std::forward< HighFrequencyVertexFunctor >( High ) , out );
 		return out;
 	}
 
+	template< typename EigenSolver , typename T , typename Real , typename LowFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ , typename HighFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ >
+	std::vector< T > ProcessVertexVertex( const FEM::RiemannianMesh< Real > &mesh , Real lowWeight , Real highWeight , LowFrequencyVertexFunctor && Low , HighFrequencyVertexFunctor && High )
+	{
+		EigenSolver solver;
+		return _ProcessVertexVertex< EigenSolver , T , Real >( solver , mesh , lowWeight , highWeight , std::forward< LowFrequencyVertexFunctor >( Low ) , std::forward< HighFrequencyVertexFunctor >( High ) , false );
+	}
+
+	template< typename EigenSolver , typename T , typename Real , typename LowFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ , typename HighFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ >
+	std::vector< T > ProcessVertexVertex( EigenSolver & solver , const FEM::RiemannianMesh< Real > &mesh , Real lowWeight , Real highWeight , LowFrequencyVertexFunctor && Low , HighFrequencyVertexFunctor && High )
+	{
+		return _ProcessVertexVertex< EigenSolver , T , Real >( solver , mesh , lowWeight , highWeight , std::forward< LowFrequencyVertexFunctor >( Low ) , std::forward< HighFrequencyVertexFunctor >( High ) , true );
+	}
+
 	template< typename EigenSolver , typename T , typename Real , typename LowFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ , typename HighFrequencyEdgeFunctor /* = std::function< T ( unsigned int ) > */ >
-	std::vector< T > ProcessVertexEdge( const FEM::RiemannianMesh< Real > &mesh , Real lowWeight , Real highWeight , LowFrequencyVertexFunctor && Low , HighFrequencyEdgeFunctor && High )
+	std::vector< T > _ProcessVertexEdge( EigenSolver & solver , const FEM::RiemannianMesh< Real > &mesh , Real lowWeight , Real highWeight , LowFrequencyVertexFunctor && Low , HighFrequencyEdgeFunctor && High , bool preAnalyzed )
 	{
 		static_assert( Array< T >::Dim , "[ERROR] T is not of array type" );
 		static_assert( std::is_convertible_v< LowFrequencyVertexFunctor , std::function< T ( unsigned int ) > > , "[ERROR] LowFrequencyVertexFunctor is poorly formed" );
@@ -136,13 +164,28 @@ namespace GradientDomain
 
 		Eigen::SparseMatrix< Real > mass = mesh.template massMatrix< FEM::BASIS_0_WHITNEY , true >() * lowWeight;
 		Eigen::SparseMatrix< Real > d = mesh.template dMatrix< FEM::BASIS_0_WHITNEY , FEM::BASIS_1_WHITNEY , true >();
-		Eigen::SparseMatrix< Real > divergence = d.transpose() * mesh.template massMatrix< FEM::BASIS_1_WHITNEY , true >() * highWeight;
+		Eigen::SparseMatrix< Real > divergence = d.transpose() * mesh.template massMatrix< FEM::BASIS_1_WHITNEY , true >( true ) * highWeight;
 
-		EigenSolver solver( mass + divergence * d );
+		if( preAnalyzed ) solver.factorize( mass + divergence * d );
+		else              solver.compute  ( mass + divergence * d );
+		if( solver.info()!=Eigen::Success ) ERROR_OUT( "Failed to factorize matrix" );
 
 		std::vector< T > out( mesh.vCount() );
 		_Solve< 0 >( solver , mass , divergence , std::forward< LowFrequencyVertexFunctor >( Low ) , std::forward< HighFrequencyEdgeFunctor >( High ) , out );
 		return out;
+	}
+
+	template< typename EigenSolver , typename T , typename Real , typename LowFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ , typename HighFrequencyEdgeFunctor /* = std::function< T ( unsigned int ) > */ >
+	std::vector< T > ProcessVertexEdge( const FEM::RiemannianMesh< Real > &mesh , Real lowWeight , Real highWeight , LowFrequencyVertexFunctor && Low , HighFrequencyEdgeFunctor && High )
+	{
+		EigenSolver solver;
+		return _ProcessVertexEdge< EigenSolver , T , Real >( solver , mesh , lowWeight , highWeight , std::forward< LowFrequencyVertexFunctor >( Low ) , std::forward< HighFrequencyEdgeFunctor >( High ) , false );
+	}
+
+	template< typename EigenSolver , typename T , typename Real , typename LowFrequencyVertexFunctor /* = std::function< T ( unsigned int ) > */ , typename HighFrequencyEdgeFunctor /* = std::function< T ( unsigned int ) > */ >
+	std::vector< T > ProcessVertexEdge( EigenSolver & solver , const FEM::RiemannianMesh< Real > &mesh , Real lowWeight , Real highWeight , LowFrequencyVertexFunctor && Low , HighFrequencyEdgeFunctor && High )
+	{
+		return _ProcessVertexEdge< EigenSolver , T , Real >( solver , mesh , lowWeight , highWeight , std::forward< LowFrequencyVertexFunctor >( Low ) , std::forward< HighFrequencyEdgeFunctor >( High ) , true );
 	}
 
 	template< typename EigenSolver , typename Real , typename VertexFunctor /* = std::function< Point< Real , 3 >( unsigned int ) > */ , typename NormalFunctor /* = std::function< Point< Real , 3 >( unsigned int ) > */ >
@@ -164,6 +207,27 @@ namespace GradientDomain
 			};
 
 		return ProcessVertexEdge< EigenSolver , Point3D< Real > , Real >( mesh , vWeight , nWeight , LowFrequencyVertexValues , HighFrequencyEdgeValues );
+	}
+
+	template< typename EigenSolver , typename Real , typename VertexFunctor /* = std::function< Point< Real , 3 >( unsigned int ) > */ , typename NormalFunctor /* = std::function< Point< Real , 3 >( unsigned int ) > */ >
+	std::vector< Point< Real , 3 > > FitToNormals( EigenSolver & solver , const FEM::RiemannianMesh< Real > &mesh , Real vWeight , Real nWeight , VertexFunctor && V , NormalFunctor && N )
+	{
+		static_assert( std::is_convertible_v< VertexFunctor , std::function< Point< Real , 3 > ( unsigned int ) > > , "[ERROR] VertexFunctor is poorly formed" );
+		static_assert( std::is_convertible_v< NormalFunctor , std::function< Point< Real , 3 > ( unsigned int ) > > , "[ERROR] NormalFunctor is poorly formed" );
+
+		auto LowFrequencyVertexValues = [&]( unsigned int v ){ return V(v); };
+
+		// High frequencies given projection of edge offset onto the normal plane
+		auto HighFrequencyEdgeValues = [&]( unsigned int e )
+			{
+				int v1 , v2;
+				mesh.edgeVertices( e , v1 , v2 );
+				Point< Real , 3 > d = V(v2) - V(v1);
+				Point< Real , 3 > n = N(v2) + N(v1);
+				return d - Point< Real , 3 >::Dot( d , n ) / Point< Real , 3 >::SquareNorm( n ) * n;
+			};
+
+		return ProcessVertexEdge< EigenSolver , Point3D< Real > , Real >( solver , mesh , vWeight , nWeight , LowFrequencyVertexValues , HighFrequencyEdgeValues );
 	}
 
 };

@@ -185,7 +185,7 @@ namespace NormalSmoother
 			//  P^t * ( M + t*S ) * P * o = - t * P^t * S * n
 			if( !iter ) solver.compute( Pt * A * P );
 			else        solver.factorize( Pt * A * P );
-
+			if( solver.info()!=Eigen::Success ) ERROR_OUT( "Failed to factorize matrix" );
 
 			Eigen::VectorXd n( normals.size()*Dim );
 			for( unsigned int i=0 ; i<normals.size() ; i++ ) for( unsigned int d=0 ; d<Dim ; d++ ) n[i*Dim+d] = normals[i][d];
