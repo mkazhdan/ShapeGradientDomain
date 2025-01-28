@@ -98,7 +98,7 @@ The default value for this parameter is 0.0.<br>
 
 <DT>[<b>--npWeight</b> &#60;<i>normal projection weight</i>&#62;]
 <DD> This floating point value gives the normal projection weight (&delta;).<BR>
-The default value for this parameter is 10<SUP>-3</SUP>.<br>
+The default value for this parameter is 10<SUP>2</SUP>.<br>
 
 <DT>[<b>--signal</b>]
 <DD> This inter value describes which signal is to be processed:

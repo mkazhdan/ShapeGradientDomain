@@ -70,7 +70,7 @@ Misha::CmdLineParameter< float >
 	NormalSmoothingWeight( "nWeight" , 1e-4f ) ,
 	GradientWeight( "gWeight" , 1e-4f ) ,
 	GradientScale( "gScale" , 1.f ) ,
-	NormalProjectionWeight( "npWeight" , 1e-3f );
+	NormalProjectionWeight( "npWeight" , 1e2f );
 
 Misha::CmdLineParameter< int >
 	Signal( "signal" , static_cast< int >( SignalType::POSITION ) ) ,

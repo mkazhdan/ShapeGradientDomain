@@ -89,9 +89,10 @@ namespace CurvatureMetric
 			0 , simplexNum ,
 			[&]( unsigned int , size_t i )
 			{
-				Point< Real , Dim > v[K+1] , n[K+1];
-				for( unsigned int k=0 ; k<=K ; k++ ) v[k] = V( simplices[i][k] ) , n[k] = N( simplices[i][k] );
-				SquareMatrix< Real , K > II = SecondFundamentalForm< Real , K >( Simplex< Real , Dim , K >( v ) , n );
+				Simplex< Real , Dim , K > s;
+				Point< Real , Dim > n[K+1];
+				for( unsigned int k=0 ; k<=K ; k++ ) s[k] = V( simplices[i][k] ) , n[k] = N( simplices[i][k] );
+				SquareMatrix< Real , K > II = SecondFundamentalForm< Real , K >( s , n );
 				Eigen::GeneralizedSelfAdjointEigenSolver< Eigen::MatrixXd > ges( ToEigen( II ) , ToEigen( mesh.g(i) ) );
 				Eigen::Matrix< Real , K  , K > D( Eigen::DiagonalMatrix< Real , K >( ges.eigenvalues() ) );
 				Point< Real , K > pCurvatures;
