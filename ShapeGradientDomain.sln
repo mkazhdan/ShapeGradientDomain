@@ -50,6 +50,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misha", "Misha", "{C7B71F77
 		Misha\Vector.inl = Misha\Vector.inl
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShapeCurvature", "ShapeCurvature\ShapeCurvature.vcxproj", "{92543D37-6A33-4F5F-8BC1-19F73B7077B8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -72,6 +74,18 @@ Global
 		{BC0EC73C-2206-4CC4-AA9C-6E3A0BF2A37B}.Release|Win32.Build.0 = Release|Win32
 		{BC0EC73C-2206-4CC4-AA9C-6E3A0BF2A37B}.Release|x64.ActiveCfg = Release|x64
 		{BC0EC73C-2206-4CC4-AA9C-6E3A0BF2A37B}.Release|x64.Build.0 = Release|x64
+		{92543D37-6A33-4F5F-8BC1-19F73B7077B8}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
+		{92543D37-6A33-4F5F-8BC1-19F73B7077B8}.Debug|Mixed Platforms.Build.0 = Debug|x64
+		{92543D37-6A33-4F5F-8BC1-19F73B7077B8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{92543D37-6A33-4F5F-8BC1-19F73B7077B8}.Debug|Win32.Build.0 = Debug|Win32
+		{92543D37-6A33-4F5F-8BC1-19F73B7077B8}.Debug|x64.ActiveCfg = Debug|x64
+		{92543D37-6A33-4F5F-8BC1-19F73B7077B8}.Debug|x64.Build.0 = Debug|x64
+		{92543D37-6A33-4F5F-8BC1-19F73B7077B8}.Release|Mixed Platforms.ActiveCfg = Release|x64
+		{92543D37-6A33-4F5F-8BC1-19F73B7077B8}.Release|Mixed Platforms.Build.0 = Release|x64
+		{92543D37-6A33-4F5F-8BC1-19F73B7077B8}.Release|Win32.ActiveCfg = Release|Win32
+		{92543D37-6A33-4F5F-8BC1-19F73B7077B8}.Release|Win32.Build.0 = Release|Win32
+		{92543D37-6A33-4F5F-8BC1-19F73B7077B8}.Release|x64.ActiveCfg = Release|x64
+		{92543D37-6A33-4F5F-8BC1-19F73B7077B8}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

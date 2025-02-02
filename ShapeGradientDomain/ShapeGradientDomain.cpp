@@ -45,7 +45,6 @@ DAMAGE.
 #include <Misha/PlyVertexData.h>
 #include <Misha/FEM.h>
 #include <Misha/MultiThreading.h>
-#include <Misha/NormalSmoother.h>
 
 #include <Include/CurvatureMetric.h>
 #include <Include/GradientDomain.h>
@@ -73,12 +72,10 @@ Misha::CmdLineParameter< float >
 	NormalProjectionWeight( "npWeight" , 1e2f );
 
 Misha::CmdLineParameter< int >
-	Signal( "signal" , static_cast< int >( SignalType::POSITION ) ) ,
-	NormalSmoothingIters( "nIters" , 0 );
+	Signal( "signal" , static_cast< int >( SignalType::POSITION ) );
 
 Misha::CmdLineReadable
 	Anisotropic( "anisotropic" ) ,
-	HarmonicNormalSmoothing( "hNormals" ) ,
 	Verbose( "verbose" );
 
 Misha::CmdLineReadable* params[] =
@@ -91,9 +88,7 @@ Misha::CmdLineReadable* params[] =
 	&Anisotropic ,
 	&Signal ,
 	&CurvatureWeight ,
-	&NormalSmoothingIters ,
 	&NormalSmoothingWeight ,
-	&HarmonicNormalSmoothing ,
 	&Verbose ,
 	NULL
 };
@@ -103,7 +98,6 @@ void ShowUsage( const char* ex )
 	printf( "Usage %s:\n" , ex );
 	printf( "\t --%s <input geometry>\n" , In.name.c_str() );
 	printf( "\t[--%s <output geometry>]\n" , Out.name.c_str() );
-	printf( "\t[--%s <normal smoothing iterations>=%d]\n" , NormalSmoothingIters.name.c_str() , NormalSmoothingIters.value );
 	printf( "\t[--%s <normal smoothing weight>=%g]\n" , NormalSmoothingWeight.name.c_str() , NormalSmoothingWeight.value );
 	printf( "\t[--%s <gradient weight>=%g]\n" , GradientWeight.name.c_str() , GradientWeight.value );
 	printf( "\t[--%s <gradient scale>=%g]\n" , GradientScale.name.c_str() , GradientScale.value );
@@ -112,7 +106,6 @@ void ShowUsage( const char* ex )
 	printf( "\t[--%s <signal type>=%d]\n" , Signal.name.c_str() , Signal.value );
 	for( int i=0 ; i<static_cast< int >( SignalType::COUNT ) ; i++ ) printf( "\t\t%d] %s\n" , i , SignalNames[i].c_str() );
 	printf( "\t[--%s]\n" , Anisotropic.name.c_str() );
-	printf( "\t[--%s]\n" , HarmonicNormalSmoothing.name.c_str() );
 	printf( "\t[--%s]\n" , Verbose.name.c_str() );
 }
 
@@ -254,21 +247,15 @@ int _main( void )
 
 		///////////////////
 		// Normal smoothing
-		if( NormalSmoothingIters.value>0 && NormalSmoothingWeight.value>0 )
+		if( NormalSmoothingWeight.value>0 )
 		{
 			Miscellany::PerformanceMeter pMeter( '.' );
-			if( HarmonicNormalSmoothing.set )
-				NormalSmoother::Smooth< 2 , Solver >( mesh.template massMatrix< FEM::BASIS_0_WHITNEY , true >() , mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY , true >() , curvatureNormals , NormalSmoothingIters.value , NormalSmoothingWeight.value );
-			else
-				for( unsigned int iter=0 ; iter<(unsigned int)NormalSmoothingIters.value ; iter++ )
-				{
-					curvatureNormals = GradientDomain::ProcessVertexVertex< Solver , Point3D< Real > , Real >( solver , mesh , (Real)1. , NormalSmoothingWeight.value , [&]( unsigned int v ){ return curvatureNormals[v]; } , []( unsigned int ){ return Point< Real , 3 >(); } );
-					ThreadPool::ParallelFor
-					(
-						0 , curvatureNormals.size() ,
-						[&]( unsigned int , size_t i ){ curvatureNormals[i] /= Point< Real , 3 >::Length( curvatureNormals[i] ); }
-					);
-				}
+			curvatureNormals = GradientDomain::ProcessVertexVertex< Solver , Point3D< Real > , Real >( solver , mesh , (Real)1. , NormalSmoothingWeight.value , [&]( unsigned int v ){ return curvatureNormals[v]; } , []( unsigned int ){ return Point< Real , 3 >(); } );
+			ThreadPool::ParallelFor
+			(
+				0 , curvatureNormals.size() ,
+				[&]( unsigned int , size_t i ){ curvatureNormals[i] /= Point< Real , 3 >::Length( curvatureNormals[i] ); }
+			);
 			if( Verbose.set ) std::cout << pMeter( "Normal smoothing" ) << std::endl;
 		}
 		// Normal smoothing

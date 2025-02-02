@@ -39,6 +39,9 @@ namespace CurvatureMetric
 	template< typename Real , unsigned int K >
 	SquareMatrix< Real , K > SecondFundamentalForm( Simplex< Real , K+1 , K > s , const Point< Real , K+1 > n[K+1] , bool symmetric=true );
 
+	template< typename Real , unsigned int K >
+	Matrix< Real , K , K+1 > PrincipalCurvatures( Simplex< Real , K+1 , K > s , const Point< Real , K+1 > n[K+1] , Real curvatureValues[K] );
+
 	template< typename Real , typename VertexFunctor /* = std::function< Point< Real , 3 > ( unsigned int ) */ , typename NormalFunctor /* = std::function< Point< Real , 3 > ( unsigned int ) */ , typename CurvatureFunctor /* = std::function< Point< Real , 2 > ( Point< Real , 2 > ) > */ >
 	void SetCurvatureMetric( FEM::RiemannianMesh< Real > &mesh , VertexFunctor && V , NormalFunctor && N , CurvatureFunctor && F );
 
@@ -57,6 +60,36 @@ namespace CurvatureMetric
 		else            return II;
 	}
 
+	template< typename Real , unsigned int K >
+	Matrix< Real , K , K+1 > PrincipalCurvatures( Simplex< Real , K+1 , K > s , const Point< Real , K+1 > n[K+1] , Real curvatureValues[K] )
+	{
+		auto ToEigen = []( const SquareMatrix< Real , K > & M )
+			{
+				Eigen::Matrix< Real , K , K > _M;
+				for( unsigned int i=0 ; i<K ; i++ ) for( unsigned int j=0 ; j<K ; j++ ) _M(i,j) = M(j,i);
+				return _M;
+			};
+
+		auto FromEigen = []( const Eigen::Matrix< Real , K , K > & M )
+			{
+				SquareMatrix< Real , K > _M;
+				for( unsigned int i=0 ; i<K ; i++ ) for( unsigned int j=0 ; j<K ; j++ ) _M(i,j) = M(j,i);
+				return _M;
+			};
+
+		Point< Real , K+1 > d[K];
+		for( unsigned int k=0 ; k<K ; k++ ) d[k] = s[k+1]-s[0];
+
+		Matrix< Real , K , K+1 > D;
+		for( unsigned int i=0 ; i<K ; i++ ) for( unsigned int j=0 ; j<=K ; j++ ) D(i,j) = d[i][j];
+
+		SquareMatrix< Real , K > II = SecondFundamentalForm< Real , K >( s , n , true );
+
+		Eigen::GeneralizedSelfAdjointEigenSolver< Eigen::MatrixXd > ges( ToEigen( II ) , ToEigen( D.transpose() * D ) );
+		for( unsigned int k=0 ; k<K ; k++ ) curvatureValues[k] = ges.eigenvalues()[k];
+
+		return D * FromEigen( ges.eigenvectors() );
+	}
 
 	template< typename Real , typename VertexFunctor /* = std::function< Point< Real , 3 > ( unsigned int ) */ , typename NormalFunctor /* = std::function< Point< Real , 3 > ( unsigned int ) */ , typename PrincipalCurvatureFunctor /* = std::function< Point< Real , 2 > ( Point< Real , 2 > ) > */ >
 	void SetCurvatureMetric( FEM::RiemannianMesh< Real > &mesh , VertexFunctor && V , NormalFunctor && N , PrincipalCurvatureFunctor && PCF )
