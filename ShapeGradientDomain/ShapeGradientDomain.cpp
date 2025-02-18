@@ -267,7 +267,7 @@ int _main( void )
 			// Input: Principal curvature values
 			// Output: Positive entries of the diagonal matrix describing the scaling along the principal curvature directions
 			//         Outputting the identity matrix reproduces the embedding metric
-			auto PrincipalCurvatureFunctor = [&]( Point< Real , 2 > pCurvatures )
+			auto PrincipalCurvatureFunctor = [&]( unsigned int , Point< Real , 2 > pCurvatures )
 				{
 					pCurvatures[0] *= pCurvatures[0];
 					pCurvatures[1] *= pCurvatures[1];

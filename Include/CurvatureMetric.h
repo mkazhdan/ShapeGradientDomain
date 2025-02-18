@@ -91,15 +91,15 @@ namespace CurvatureMetric
 		return D * FromEigen( ges.eigenvectors() );
 	}
 
-	template< typename Real , typename VertexFunctor /* = std::function< Point< Real , 3 > ( unsigned int ) */ , typename NormalFunctor /* = std::function< Point< Real , 3 > ( unsigned int ) */ , typename PrincipalCurvatureFunctor /* = std::function< Point< Real , 2 > ( Point< Real , 2 > ) > */ >
+	template< typename Real , typename VertexFunctor /* = std::function< Point< Real , 3 > ( unsigned int ) */ , typename NormalFunctor /* = std::function< Point< Real , 3 > ( unsigned int ) */ , typename PrincipalCurvatureFunctor /* = std::function< Point< Real , 2 > ( unsigned int , Point< Real , 2 > ) > */ >
 	void SetCurvatureMetric( FEM::RiemannianMesh< Real > &mesh , VertexFunctor && V , NormalFunctor && N , PrincipalCurvatureFunctor && PCF )
 	{
 		static const unsigned int K = 2;
 		static const unsigned int Dim = K+1;
 
-		static_assert( std::is_convertible_v<             VertexFunctor , std::function< Point< Real , Dim > ( unsigned int ) >    > , "[ERROR] VertexFunctor is poorly formed" );
-		static_assert( std::is_convertible_v<             NormalFunctor , std::function< Point< Real , Dim > ( unsigned int ) >    > , "[ERROR] NormalFunctor is poorly formed" );
-		static_assert( std::is_convertible_v< PrincipalCurvatureFunctor , std::function< Point< Real , K > ( Point< Real , K > ) > > , "[ERROR] PrincipalCurvatureFunctor is poorly formed" );
+		static_assert( std::is_convertible_v<             VertexFunctor , std::function< Point< Real , Dim > ( unsigned int )                   > > , "[ERROR] VertexFunctor is poorly formed" );
+		static_assert( std::is_convertible_v<             NormalFunctor , std::function< Point< Real , Dim > ( unsigned int )                   > > , "[ERROR] NormalFunctor is poorly formed" );
+		static_assert( std::is_convertible_v< PrincipalCurvatureFunctor , std::function< Point< Real , K > ( unsigned int , Point< Real , K > ) > > , "[ERROR] PrincipalCurvatureFunctor is poorly formed" );
 
 		auto ToEigen = []( const SquareMatrix< Real , K > & M )
 			{
@@ -130,7 +130,7 @@ namespace CurvatureMetric
 				Eigen::Matrix< Real , K  , K > D( Eigen::DiagonalMatrix< Real , K >( ges.eigenvalues() ) );
 				Point< Real , K > pCurvatures;
 				for( unsigned int k=0 ; k<K ; k++ ) pCurvatures[k] = D(k,k);
-				pCurvatures = PCF( pCurvatures );
+				pCurvatures = PCF( i , pCurvatures );
 				for( unsigned int k=0 ; k<K ; k++ ) D(k,k) = pCurvatures[k];
 				mesh.g(i) = mesh.g(i) * FromEigen( Eigen::Matrix< Real , K , K >( ges.eigenvectors() * D * ges.eigenvectors().inverse() ) );
 			}
