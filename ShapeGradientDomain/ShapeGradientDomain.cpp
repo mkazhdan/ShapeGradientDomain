@@ -232,7 +232,7 @@ int _main( void )
 	///////////////////////////////////////
 	// System matrix symbolic factorization
 	pMeter.reset();
-	solver.analyzePattern( mesh.template massMatrix< FEM::BASIS_0_WHITNEY , true >() );
+	solver.analyzePattern( mesh.template stiffnessMatrix< FEM::BASIS_0_WHITNEY , true >() );
 	if( Verbose.set ) std::cout << pMeter( "Symbolic factorization" ) << std::endl;
 	// System matrix symbolic factorization
 	///////////////////////////////////////
