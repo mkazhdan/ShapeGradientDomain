@@ -157,8 +157,14 @@ public:
 	Real InnerProduct( const Point &p )	const
 	{
 		Real dot={};
-		if constexpr( std::derived_from< T , InnerProductSpace< Real , T > > ) for( int i=0 ; i<Dim ; i++ ) dot += T::Dot( p.coords[i] , coords[i] );
-		else                                                                   for( int i=0 ; i<Dim ; i++ ) dot += p.coords[i] * coords[i];
+#if 0
+		if constexpr( std::derived_from< T , InnerProductSpace< Real , T > > )
+#else // __cplusplus<202002l
+		if constexpr( std::is_base_of_v< InnerProductSpace< Real , T > , T > )
+#endif // __cplusplus
+			for( int i=0 ; i<Dim ; i++ ) dot += T::Dot( p.coords[i] , coords[i] );
+		else
+			for( int i=0 ; i<Dim ; i++ ) dot += p.coords[i] * coords[i];
 		return dot;
 	}
 	/////////////////////////////////
@@ -241,8 +247,14 @@ public:
 		if( _dim!=p._dim ) ERROR_OUT( "Dimensions differ: " , _dim , " != " , p._dim );
 
 		Real dot={};
-		if constexpr( std::derived_from< T , InnerProductSpace< Real , T > > ) for( int i=0 ; i<_dim ; i++ ) dot += T::Dot( p._coords[i] , _coords[i] );
-		else                                                                   for( int i=0 ; i<_dim ; i++ ) dot += p._coords[i] * _coords[i];
+#if 0
+		if constexpr( std::derived_from< T , InnerProductSpace< Real , T > > )
+#else // __cplusplus<202002l
+		if constexpr( std::is_base_of_v< InnerProductSpace< Real , T > , T > )
+#endif // __cplusplus
+			for( int i=0 ; i<_dim ; i++ ) dot += T::Dot( p._coords[i] , _coords[i] );
+		else
+			for( int i=0 ; i<_dim ; i++ ) dot += p._coords[i] * _coords[i];
 		return dot;
 	}
 	/////////////////////////////////
@@ -828,7 +840,11 @@ template< typename T , unsigned int Dim1 , unsigned int Dim2 , typename Real >
 Matrix< Real , Dim2 , Dim1 > OuterProduct( Point< T , Dim1 , Real > p1 , Point< T , Dim2 , Real > p2 )
 {
 	Matrix< Real , Dim2 , Dim1 > op;
-	if constexpr( std::derived_from< T , InnerProductSpace< Real , T > > ) 
+#if 0
+	if constexpr( std::derived_from< T , InnerProductSpace< Real , T > > )
+#else // __cplusplus<202002l
+	if constexpr( std::is_base_of_v< InnerProductSpace< Real , T > , T > )
+#endif // __cplusplus
 		for( unsigned int i=0 ; i<Dim1 ; i++ ) for( unsigned int j=0 ; j<Dim2 ; j++ ) op(j,i) = T::Dot( p1[i] , p2[j] );
 	else
 		for( unsigned int i=0 ; i<Dim1 ; i++ ) for( unsigned int j=0 ; j<Dim2 ; j++ ) op(j,i) = p1[i] * p2[j];
@@ -838,7 +854,11 @@ template< typename T , unsigned int Dim , typename Real >
 SquareMatrix< Real , Dim > OuterProduct( Point< T , Dim , Real > p1 , Point< T , Dim , Real > p2 )
 {
 	SquareMatrix< Real , Dim > op;
-	if constexpr( std::derived_from< T , InnerProductSpace< Real , T > > ) 
+#if 0
+	if constexpr( std::derived_from< T , InnerProductSpace< Real , T > > )
+#else // __cplusplus<202002l
+	if constexpr( std::is_base_of_v< InnerProductSpace< Real , T > , T > )
+#endif // __cplusplus
 		for( unsigned int i=0 ; i<Dim ; i++ ) for( unsigned int j=0 ; j<Dim ; j++ ) op(j,i) = T::Dot( p1[i] , p2[j] );
 	else
 		for( unsigned int i=0 ; i<Dim ; i++ ) for( unsigned int j=0 ; j<Dim ; j++ ) op(j,i) = p1[i] * p2[j];

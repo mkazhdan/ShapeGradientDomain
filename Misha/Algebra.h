@@ -79,7 +79,7 @@ public:
 	}
 };
 
-template<class Real,class Element>
+template< class Real , class Element >
 class VectorSpace
 {
 public:
@@ -87,7 +87,7 @@ public:
 	// For this to work, need to define:
 	// void Element::Add(const Element& e)
 	// void Element::Scale(Real s)
-	friend Element  operator -  ( const Element& e )
+	friend Element operator - ( const Element& e )
 	{
 		Element out=e;
 		out.Scale(-1);
@@ -100,7 +100,7 @@ public:
 		out.Add(e2);
 		return out;
 	};
-	friend Element  operator -  (const Element& e1,const Element& e2)
+	friend Element  operator - (const Element& e1,const Element& e2)
 	{
 		Element out=e2;
 		out.Scale(-1);
