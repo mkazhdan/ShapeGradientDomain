@@ -72,7 +72,7 @@ void Vector<T>::resize( size_t N )
 		if( m_N ) FreePointer( m_pV );
 		m_pV = Array::NullPointer< T >( );
 		m_N = N;
-		if( N ) m_pV = AllocPointer< T >( N );
+		if( N ) m_pV = Array::AllocPointer< T >( N );
 	}
 	if( N ) memset( m_pV, 0, N*sizeof(T) );
 }
