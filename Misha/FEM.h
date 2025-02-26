@@ -416,8 +416,8 @@ namespace FEM
 		RiemannianMesh( Pointer( TriIndex ) t , size_t tC );
 		~RiemannianMesh( void );
 
-		template< unsigned int Dim > void setMetricFromEmbedding( ConstPointer( Point< Real , Dim > ) pointList );
-		template< unsigned int Dim > void setMetricFromEmbedding( std::function< Point< Real , Dim > (unsigned int) > PointList );
+		template< unsigned int Dim > unsigned int setMetricFromEmbedding( ConstPointer( Point< Real , Dim > ) pointList , bool warn=true );
+		template< unsigned int Dim > unsigned int setMetricFromEmbedding( std::function< Point< Real , Dim > (unsigned int) > PointList , bool warn=true );
 		// To set the metric from the edge lengths, need to provide a pointer of 3*|T| edge lengths.
 		void setMetricFromEdgeLengths( ConstPointer( Real ) edgeLengths );
 		void setMetricFromSquareEdgeLengths( ConstPointer( Real ) squareEdgeLengths );

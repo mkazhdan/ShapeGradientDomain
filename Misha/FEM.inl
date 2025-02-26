@@ -1308,13 +1308,14 @@ inline Real FEM::RiemannianMesh< Real , Index >::squareEdgeLength( int heIdx ) c
 #if 1
 template< class Real , typename Index >
 template< unsigned int Dim >
-void FEM::RiemannianMesh< Real , Index >::setMetricFromEmbedding( ConstPointer( Point< Real , Dim > ) pointList ){ return setMetricFromEmbedding< Dim >( [&]( unsigned int i ){ return pointList[i]; } ); }
+unsigned int FEM::RiemannianMesh< Real , Index >::setMetricFromEmbedding( ConstPointer( Point< Real , Dim > ) pointList , bool warn ){ return setMetricFromEmbedding< Dim >( [&]( unsigned int i ){ return pointList[i]; } , warn ); }
 
 template< class Real , typename Index >
 template< unsigned int Dim >
-void FEM::RiemannianMesh< Real , Index >::setMetricFromEmbedding( std::function< Point< Real , Dim > (unsigned int) > PointList )
+unsigned int FEM::RiemannianMesh< Real , Index >::setMetricFromEmbedding( std::function< Point< Real , Dim > (unsigned int) > PointList , bool warn )
 {
 	std::mutex mut;
+	unsigned int badDeterminantCount = 0;
 	ThreadPool::ParallelFor
 		(
 			0 , _tCount ,
@@ -1327,12 +1328,17 @@ void FEM::RiemannianMesh< Real , Index >::setMetricFromEmbedding( std::function<
 				if( !_g[i].determinant() )
 				{
 					std::lock_guard< std::mutex > lock( mut );
-					fprintf( stderr , "[WARNING] Vanishing metric tensor determinant[%d]\n" , (int)i );
-					for( int j=0 ; j<3 ; j++ ) std::cerr << "\t[" << _triangles[i][j] << "] = " << PointList( _triangles[i][j] ) << std::endl;
-					std::cerr << "\t" << e[0] << "\t" << e[1] << std::endl;
+					if( warn )
+					{
+						fprintf( stderr , "[WARNING] Vanishing metric tensor determinant[%d]\n" , (int)i );
+						for( int j=0 ; j<3 ; j++ ) std::cerr << "\t[" << _triangles[i][j] << "] = " << PointList( _triangles[i][j] ) << std::endl;
+						std::cerr << "\t" << e[0] << "\t" << e[1] << std::endl;
+					}
+					badDeterminantCount++;
 				}
 			}
 		);
+	return badDeterminantCount;
 }
 #else
 template< class Real , typename Index >
