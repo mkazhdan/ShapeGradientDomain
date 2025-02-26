@@ -27,14 +27,6 @@ DAMAGE.
 */
 #define FULL_ARRAY_DEBUG    0	// Note that this is not thread-safe
 
-#include <stdio.h>
-#include <emmintrin.h>
-#include <vector>
-#ifdef _WIN32
-#include <windows.h>
-#endif // _WIN32
-#include <stddef.h>
-
 inline bool isfinitef( float fp ){ float f=fp; return ((*(unsigned *)&f)&0x7f800000)!=0x7f800000; }
 
 

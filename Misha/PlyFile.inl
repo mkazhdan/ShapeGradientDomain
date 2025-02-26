@@ -31,12 +31,6 @@ EXPRESS, IMPLIED OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY
 WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.   
 */
 
-#include <cstdio>
-#include <cstdlib>
-#include <math.h>
-#include <cstring>
-#include "PlyFile.h"
-
 const char *type_names[] =
 {
 	"invalid",

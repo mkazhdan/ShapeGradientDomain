@@ -26,16 +26,6 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef M_PI
-#define M_PI		3.14159265358979323846
-#endif // M_PI
-
-#ifndef _WIN32
-#include <cstdlib>
-#endif
-
-#include <float.h>
-#include <unordered_map>
 
 inline long long HalfEdgeKey( int i1 , int i2 )
 {

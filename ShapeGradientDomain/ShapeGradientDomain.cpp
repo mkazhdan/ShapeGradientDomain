@@ -49,6 +49,11 @@ DAMAGE.
 #include <Include/CurvatureMetric.h>
 #include <Include/GradientDomain.h>
 
+using namespace MishaK;
+using namespace MishaK::CmdLineParser;
+using namespace MishaK::Geometry;
+using namespace MishaK::Array;
+using namespace MishaK::MultiThreading;
 
 enum struct SignalType
 {
@@ -60,25 +65,25 @@ enum struct SignalType
 };
 const std::string SignalNames[] = { std::string( "position" ) , std::string( "normal" ) , std::string( "color" ) , std::string( "normal to position" ) };
 
-Misha::CmdLineParameter< std::string >
+CmdLineParameter< std::string >
 	In( "in" ) ,
 	Out( "out" );
 
-Misha::CmdLineParameter< float >
+CmdLineParameter< float >
 	CurvatureWeight( "kWeight" , 0.f ) ,
 	NormalSmoothingWeight( "nWeight" , 1e-4f ) ,
 	GradientWeight( "gWeight" , 1e-4f ) ,
 	GradientScale( "gScale" , 1.f ) ,
 	NormalProjectionWeight( "npWeight" , 1e2f );
 
-Misha::CmdLineParameter< int >
+CmdLineParameter< int >
 	Signal( "signal" , static_cast< int >( SignalType::POSITION ) );
 
-Misha::CmdLineReadable
+CmdLineReadable
 	Anisotropic( "anisotropic" ) ,
 	Verbose( "verbose" );
 
-Misha::CmdLineReadable* params[] =
+CmdLineReadable* params[] =
 {
 	&In ,
 	&Out ,
@@ -364,7 +369,7 @@ int _main( void )
 
 int main( int argc , char* argv[] )
 {
-	Misha::CmdLineParse( argc-1 , argv+1 , params );
+	CmdLineParse( argc-1 , argv+1 , params );
 	if( !In.set )
 	{
 		ShowUsage( argv[0] );

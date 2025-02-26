@@ -55,33 +55,33 @@ namespace PLY
 
 #if 1
 	template< typename Index >
-	PlyProperty Face< Index >::Properties[] = { PlyProperty( "vertex_indices" , Type< Index >() , Type< Index >() , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
+	PlyFile::PlyProperty Face< Index >::Properties[] = { PlyFile::PlyProperty( "vertex_indices" , Type< Index >() , Type< Index >() , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
 #else
 	template<>
-	PlyProperty Face<          int       >::Properties[] = { PlyProperty( "vertex_indices" , PLY_INT       , PLY_INT       , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
+	PlyFile::PlyProperty Face<          int       >::Properties[] = { PlyFile::PlyProperty( "vertex_indices" , PLY_INT       , PLY_INT       , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
 	template<>
-	PlyProperty Face< unsigned int       >::Properties[] = { PlyProperty( "vertex_indices" , PLY_UINT      , PLY_UINT      , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
+	PlyFile::PlyProperty Face< unsigned int       >::Properties[] = { PlyFile::PlyProperty( "vertex_indices" , PLY_UINT      , PLY_UINT      , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
 	template<>
-	PlyProperty Face<          long long >::Properties[] = { PlyProperty( "vertex_indices" , PLY_LONGLONG  , PLY_LONGLONG  , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
+	PlyFile::PlyProperty Face<          long long >::Properties[] = { PlyFile::PlyProperty( "vertex_indices" , PLY_LONGLONG  , PLY_LONGLONG  , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
 	template<>
-	PlyProperty Face< unsigned long long >::Properties[] = { PlyProperty( "vertex_indices" , PLY_ULONGLONG , PLY_ULONGLONG , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
+	PlyFile::PlyProperty Face< unsigned long long >::Properties[] = { PlyFile::PlyProperty( "vertex_indices" , PLY_ULONGLONG , PLY_ULONGLONG , offsetof( Face , vertices ) , 1 , PLY_INT , PLY_INT , offsetof( Face , nr_vertices ) ) };
 #endif
 
 	struct Edge{ int v1 , v2; };
-	const PlyProperty EdgeProps[] =
+	const PlyFile::PlyProperty EdgeProps[] =
 	{ 
 		{ "v1" , PLY_INT , PLY_INT , (int)offsetof( Edge , v1 ) , 0 , 0 , 0 , 0 },
 		{ "v2" , PLY_INT , PLY_INT , (int)offsetof( Edge , v2 ) , 0 , 0 , 0 , 0 }
 	};
 
 	// Read
-	inline int ReadHeader( std::string fileName , const PlyProperty *properties , int propertyNum , bool *readFlags )
+	inline int ReadHeader( std::string fileName , const PlyFile::PlyProperty *properties , int propertyNum , bool *readFlags )
 	{
 		int file_type;
 		std::vector< std::string > elist;
 		float version;
 
-		PlyFile *ply = PlyFile::Read( fileName , elist , file_type , version );
+		PlyFile::PlyFile *ply = PlyFile::PlyFile::Read( fileName , elist , file_type , version );
 		if( !ply ) THROW( "could not read ply file: " , fileName );
 
 		for( int i=0 ; i<(int)elist.size() ; i++ ) if( elist[i]=="vertex" ) for( int j=0 ; j<propertyNum ; j++ ) if( readFlags ) readFlags[j] = ply->get_property( elist[i] , &properties[j] )!=0;
@@ -90,20 +90,20 @@ namespace PLY
 		return file_type;
 	}
 
-	inline std::vector< PlyProperty > ReadVertexHeader( std::string fileName , int &file_type )
+	inline std::vector< PlyFile::PlyProperty > ReadVertexHeader( std::string fileName , int &file_type )
 	{
 		float version;
 		std::vector< std::string > elist;
-		std::vector< PlyProperty > properties;
+		std::vector< PlyFile::PlyProperty > properties;
 
-		PlyFile *ply = PlyFile::Read( fileName , elist , file_type , version );
+		PlyFile::PlyFile *ply = PlyFile::PlyFile::Read( fileName , elist , file_type , version );
 		if( !ply ) THROW( "could not read ply file: " , fileName );
 
 		for( int i=0 ; i<elist.size() ; i++ )
 		{
 			std::string &elem_name = elist[i];
 			size_t num_elems;
-			std::vector< PlyProperty * > plist = ply->get_element_description( elem_name , num_elems );
+			std::vector< PlyFile::PlyProperty * > plist = ply->get_element_description( elem_name , num_elems );
 			if( !num_elems ) continue;
 			else if( !plist.size() )
 			{
@@ -116,7 +116,7 @@ namespace PLY
 		return properties;
 	}
 
-	inline std::vector< PlyProperty > ReadVertexHeader( std::string fileName ){ int file_type; return ReadVertexHeader( fileName , file_type ); }
+	inline std::vector< PlyFile::PlyProperty > ReadVertexHeader( std::string fileName ){ int file_type; return ReadVertexHeader( fileName , file_type ); }
 
 
 	template< class VertexFactory , typename Index >
@@ -135,7 +135,7 @@ namespace PLY
 		float version;
 		std::vector< std::string > elist;
 
-		PlyFile *ply = PlyFile::Read( fileName , elist , file_type , version );
+		PlyFile::PlyFile *ply = PlyFile::PlyFile::Read( fileName , elist , file_type , version );
 		if( !ply ) THROW( "could not read ply file: " , fileName );
 
 		if( comments )
@@ -148,7 +148,7 @@ namespace PLY
 		{
 			std::string &elem_name = elist[i];
 			size_t num_elems;
-			std::vector< PlyProperty * > plist = ply->get_element_description( elem_name , num_elems );
+			std::vector< PlyFile::PlyProperty * > plist = ply->get_element_description( elem_name , num_elems );
 			if( !num_elems ) continue;
 			else if( !plist.size() )
 			{
@@ -160,7 +160,7 @@ namespace PLY
 			{
 				for( unsigned int i=0 ; i<vFactory.plyReadNum() ; i++)
 				{
-					PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticReadProperty(i) : vFactory.plyReadProperty(i);
+					PlyFile::PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticReadProperty(i) : vFactory.plyReadProperty(i);
 					int hasProperty = ply->get_property( elem_name , &prop );
 					if( vertexPropertiesFlag ) vertexPropertiesFlag[i] = (hasProperty!=0);
 				}
@@ -183,7 +183,7 @@ namespace PLY
 			{
 				for( unsigned int i=0 ; i<vFactory.plyReadNum() ; i++)
 				{
-					PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticReadProperty(i) : vFactory.plyReadProperty(i);
+					PlyFile::PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticReadProperty(i) : vFactory.plyReadProperty(i);
 					int hasProperty = ply->get_property( elem_name , &prop );
 					if( vertexPropertiesFlag ) vertexPropertiesFlag[i] = (hasProperty!=0);
 				}
@@ -321,7 +321,7 @@ namespace PLY
 		std::vector< std::string > elist;
 		int file_type;
 		float version;
-		PlyFile *ply = PlyFile::Read( fileName , elist , file_type , version );
+		PlyFile::PlyFile *ply = PlyFile::PlyFile::Read( fileName , elist , file_type , version );
 		if( !ply ) THROW( "could not read ply file: " , fileName );
 
 		if( comments )
@@ -334,7 +334,7 @@ namespace PLY
 		{
 			std::string &elem_name = elist[i];
 			size_t num_elems;
-			std::vector< PlyProperty * > plist = ply->get_element_description( elem_name , num_elems );
+			std::vector< PlyFile::PlyProperty * > plist = ply->get_element_description( elem_name , num_elems );
 			if( !num_elems ) continue;
 			else if( !plist.size() )
 			{
@@ -345,7 +345,7 @@ namespace PLY
 			{
 				for( unsigned int i=0 ; i<vFactory.plyReadNum() ; i++)
 				{
-					PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticReadProperty(i) : vFactory.plyReadProperty(i);
+					PlyFile::PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticReadProperty(i) : vFactory.plyReadProperty(i);
 					int hasProperty = ply->get_property( elem_name , &prop );
 					if( readFlags ) readFlags[i] = (hasProperty!=0);
 				}
@@ -394,7 +394,7 @@ namespace PLY
 		std::vector< typename VertexFactory::VertexType >& vertices ,
 		std::vector< Polygon >& polygons ,
 		bool *vertexPropertiesFlag ,
-		PlyProperty *polygonProperties ,
+		PlyFile::PlyProperty *polygonProperties ,
 		bool *polygonPropertiesFlag , int polygonPropertyNum ,
 		std::vector< std::string > *comments
 	)
@@ -403,7 +403,7 @@ namespace PLY
 		int file_type;
 		float version;
 
-		PlyFile *ply = PlyFile::Read( fileName , elist , file_type , version );
+		PlyFile::PlyFile *ply = PlyFile::PlyFile::Read( fileName , elist , file_type , version );
 		if( !ply ) THROW( "could not read ply file: " , fileName );
 
 		if( comments )
@@ -416,7 +416,7 @@ namespace PLY
 		{
 			std::string &elem_name = elist[i];
 			size_t num_elems;
-			std::vector< PlyProperty * > plist = ply->get_element_description( elem_name , num_elems );
+			std::vector< PlyFile::PlyProperty * > plist = ply->get_element_description( elem_name , num_elems );
 			if( !plist.size() )
 			{
 				delete ply;
@@ -426,7 +426,7 @@ namespace PLY
 			{
 				for( unsigned int i=0 ; i<vFactory.plyReadNum() ; i++ )
 				{
-					PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticReadProperty(i) : vFactory.plyReadProperty(i);
+					PlyFile::PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticReadProperty(i) : vFactory.plyReadProperty(i);
 					int hasProperty = ply->get_property( elem_name , &prop );
 					if( vertexPropertiesFlag ) vertexPropertiesFlag[i] = (hasProperty!=0);
 				}
@@ -541,7 +541,7 @@ namespace PLY
 		float version;
 		std::vector< std::string > elist = { std::string( "vertex" ) , std::string( "edge" ) , std::string( "face" ) };
 
-		PlyFile *ply = PlyFile::Write( fileName , elist , file_type , version );
+		PlyFile::PlyFile *ply = PlyFile::PlyFile::Write( fileName , elist , file_type , version );
 		if( !ply ) THROW( "could not write ply file: " , fileName );
 
 		//
@@ -551,7 +551,7 @@ namespace PLY
 			ply->element_count( "vertex", nr_vertices );
 			for( unsigned int i=0 ; i<vFactory.plyWriteNum() ; i++ )
 			{
-				PlyProperty property = vFactory.plyWriteProperty( i );
+				PlyFile::PlyProperty property = vFactory.plyWriteProperty( i );
 				ply->describe_property( "vertex" , &property );
 			}
 		}
@@ -626,7 +626,7 @@ namespace PLY
 		int nr_vertices = int(vertices.size());
 		float version;
 		std::vector< std::string > elem_names = { std::string( "vertex" ) };
-		PlyFile *ply = PlyFile::Write( fileName , elem_names , file_type , version );
+		PlyFile::PlyFile *ply = PlyFile::PlyFile::Write( fileName , elem_names , file_type , version );
 		if( !ply ) THROW( "could not write ply file: " , fileName );
 
 		//
@@ -635,7 +635,7 @@ namespace PLY
 		ply->element_count( "vertex", nr_vertices );
 		for( unsigned int i=0 ; i<vFactory.plyWriteNum() ; i++ )
 		{
-			PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticWriteProperty(i) : vFactory.plyWriteProperty(i);
+			PlyFile::PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticWriteProperty(i) : vFactory.plyWriteProperty(i);
 			ply->describe_property( "vertex" , &prop );
 		}
 
@@ -685,7 +685,7 @@ namespace PLY
 		int nr_faces = int(polygons.size());
 		float version;
 		std::vector< std::string > elem_names = { std::string( "vertex" ) , std::string( "face" ) };
-		PlyFile *ply = PlyFile::Write( fileName , elem_names , file_type , version );
+		PlyFile::PlyFile *ply = PlyFile::PlyFile::Write( fileName , elem_names , file_type , version );
 		if( !ply ) THROW( "could not write ply file: " , fileName );
 
 		//
@@ -694,7 +694,7 @@ namespace PLY
 		ply->element_count( "vertex", nr_vertices );
 		for( unsigned int i=0 ; i<vFactory.plyWriteNum() ; i++)
 		{
-			PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticWriteProperty(i) : vFactory.plyWriteProperty(i);
+			PlyFile::PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticWriteProperty(i) : vFactory.plyWriteProperty(i);
 			ply->describe_property( "vertex" , &prop );
 		}
 		ply->element_count( "face" , nr_faces );
@@ -748,7 +748,7 @@ namespace PLY
 		const VertexFactory &vFactory ,
 		const std::vector< typename VertexFactory::VertexType > &vertices ,
 		const std::vector< Polygon > &polygons ,
-		PlyProperty* polygonProperties , int polygonPropertyNum ,
+		PlyFile::PlyProperty* polygonProperties , int polygonPropertyNum ,
 		int file_type ,
 		const std::vector< std::string > *comments
 	)
@@ -757,7 +757,7 @@ namespace PLY
 		int nr_faces = int(polygons.size());
 		float version;
 		std::vector< std::string > elem_names = { std::string( "vertex" ) , std::string( "face" ) };
-		PlyFile *ply = PlyFile::Write( fileName , elem_names , file_type , version );
+		PlyFile::PlyFile *ply = PlyFile::PlyFile::Write( fileName , elem_names , file_type , version );
 		if( !ply ) THROW( "could not write ply file: " , fileName );
 
 		//
@@ -766,7 +766,7 @@ namespace PLY
 		ply->element_count( "vertex", nr_vertices );
 		for( unsigned int i=0 ; i<vFactory.plyWriteNum() ; i++)
 		{
-			PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticWriteProperty(i) : vFactory.plyWriteProperty(i);
+			PlyFile::PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticWriteProperty(i) : vFactory.plyWriteProperty(i);
 			ply->describe_property( "vertex" , &prop );
 		}
 		ply->element_count( "face" , nr_faces );
@@ -809,7 +809,7 @@ namespace PLY
 			int nr_vertices = int(vertices.size());
 			float version;
 			std::vector< std::string > elem_names = { std::string( "vertex" ) };
-			PlyFile *ply = PlyFile::Write( fileName , elem_names , file_type , version );
+			PlyFile::PlyFile *ply = PlyFile::PlyFile::Write( fileName , elem_names , file_type , version );
 			if( !ply ) THROW( "could not write ply file: " , fileName );
 
 			//
@@ -818,7 +818,7 @@ namespace PLY
 			ply->element_count( "vertex", nr_vertices );
 			for( unsigned int i=0 ; i<vFactory.plyWriteNum() ; i++)
 			{
-				PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticWriteProperty(i) : vFactory.plyWriteProperty(i);
+				PlyFile::PlyProperty prop = vFactory.isStaticallyAllocated() ? vFactory.plyStaticWriteProperty(i) : vFactory.plyWriteProperty(i);
 				ply->describe_property( "vertex" , &prop );
 			}
 

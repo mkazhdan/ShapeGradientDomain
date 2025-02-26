@@ -26,9 +26,6 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#include <float.h>
-#include <complex>
-#include <unordered_map>
 
 ///////////////////
 //  SparseMatrix //
@@ -40,9 +37,9 @@ DAMAGE.
 template< class T , class IndexType >
 SparseMatrix< T , IndexType >::SparseMatrix( void )
 {
-	rowSizes = NullPointer< size_t >( );
+	rowSizes = Array::NullPointer< size_t >( );
 	rows = 0;
-	_entries = NullPointer< Pointer( MatrixEntry< T , IndexType > ) >( );
+	_entries = Array::NullPointer< Pointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) >( );
 }
 
 template< class T , class IndexType >
@@ -50,7 +47,7 @@ void SparseMatrix< T , IndexType >::write( FILE* fp ) const
 {
 	fwrite( &rows , sizeof(size_t) , 1 , fp );
 	fwrite( rowSizes , sizeof(size_t) , rows , fp );
-	for( int i=0 ; i<rows ; i++ ) fwrite( _entries[i] , sizeof( MatrixEntry< T , IndexType > ) , rowSizes[i] , fp );
+	for( int i=0 ; i<rows ; i++ ) fwrite( _entries[i] , sizeof( SparseMatrixInterface::MatrixEntry< T , IndexType > ) , rowSizes[i] , fp );
 }
 template< class T , class IndexType >
 void SparseMatrix< T , IndexType >::read( FILE* fp )
@@ -64,7 +61,7 @@ void SparseMatrix< T , IndexType >::read( FILE* fp )
 		fread( &_rowSize , sizeof(size_t) , 1 , fp );
 		SetRowSize( i , _rowSize );
 	}
-	for( int i=0 ; i<rows ; i++ ) fread( _entries[i] , sizeof( MatrixEntry< T , IndexType > ) , rowSizes[i] , fp );
+	for( int i=0 ; i<rows ; i++ ) fread( _entries[i] , sizeof( SparseMatrixInterface::MatrixEntry< T , IndexType > ) , rowSizes[i] , fp );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -79,7 +76,7 @@ void SparseMatrix<T, IndexType>::invalidateEntries()
     for( IndexType r=0 ; r<numRows ; ++r )
 	{
         IndexType numColumns = RowSize(r);
-        MatrixEntry<T, IndexType> *row = _entries[r];
+		SparseMatrixInterface::MatrixEntry<T, IndexType> *row = _entries[r];
         for( IndexType c=0 ; c<numColumns ; ++c ) row[c].N = -1;
     }
 }
@@ -103,7 +100,7 @@ bool SparseMatrix<T, IndexType>::addScalarToEntry(T s, IndexType i,
     if ((s.real() == 0) && (s.imag() == 0))
         return true;
 
-    MatrixEntry<T, IndexType> *row = _entries[i];
+	SparseMatrixInterface::MatrixEntry<T, IndexType> *row = _entries[i];
     IndexType rSize = RowSize(i);
 
     bool success = false;
@@ -130,16 +127,16 @@ template< class T , class IndexType >
 SparseMatrix< T , IndexType >::SparseMatrix( size_t rows )
 {
 	rows = 0;
-	rowSizes = NullPointer< size_t >( );
-	_entries= NullPointer< Pointer( MatrixEntry< T , IndexType > ) >( );
+	rowSizes = Array::NullPointer< size_t >( );
+	_entries= Array::NullPointer< Pointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) >( );
 	resize( rows );
 }
 template< class T , class IndexType >
 SparseMatrix< T , IndexType >::SparseMatrix( const SparseMatrix& M )
 {
-	rowSizes = NullPointer< size_t >( );
+	rowSizes = Array::NullPointer< size_t >( );
 	rows = 0;
-	_entries = NullPointer< Pointer( MatrixEntry< T , IndexType > ) >( );
+	_entries = Array::NullPointer< Pointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) >( );
 	resize( M.rows );
 	for( int i=0 ; i<rows ; i++ )
 	{
@@ -150,9 +147,9 @@ SparseMatrix< T , IndexType >::SparseMatrix( const SparseMatrix& M )
 template< class T , class IndexType >
 SparseMatrix< T , IndexType >::SparseMatrix( SparseMatrix&& M )
 {
-	rowSizes = NullPointer< size_t >( );
+	rowSizes = Array::NullPointer< size_t >( );
 	rows = 0;
-	_entries = NullPointer< Pointer( MatrixEntry< T , IndexType > ) >( );
+	_entries = Array::NullPointer< Pointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) >( );
 
 	Swap( *this , M );
 }
@@ -160,14 +157,14 @@ template< class T , class IndexType >
 template< class T2 , class IndexType2 >
 SparseMatrix< T , IndexType >::SparseMatrix( const SparseMatrix< T2 , IndexType2 >& M )
 {
-	rowSizes = NullPointer< size_t >();
+	rowSizes = Array::NullPointer< size_t >();
 	rows = 0;
 	_entries = NULL;
 	resize( M.rows );
 	for( int i=0 ; i<rows ; i++ )
 	{
 		SetRowSize( i , M.rowSizes[i] );
-		for( int j=0 ; j<rowSizes[i] ; j++ ) _entries[i][j] = MatrixEntry< T , IndexType >( M._entries[i][j].N , T( M._entries[i][j].Value ) );
+		for( int j=0 ; j<rowSizes[i] ; j++ ) _entries[i][j] = SparseMatrixInterface::MatrixEntry< T , IndexType >( M._entries[i][j].N , T( M._entries[i][j].Value ) );
 	}
 }
 
@@ -236,7 +233,7 @@ SparseMatrix< T , IndexType >& SparseMatrix< T , IndexType >::copy( const Sparse
 		for( int j=0 ; j<rowSizes[i] ; j++ )
 		{
 			int idx = M._entries[i][j].N;
-			_entries[i][j] = MatrixEntry< T , IndexType >( idx , T( M[i][j].Value ) );
+			_entries[i][j] = SparseMatrixInterface::MatrixEntry< T , IndexType >( idx , T( M[i][j].Value ) );
 		}
 	}
 	return *this;
@@ -267,15 +264,15 @@ SparseMatrix< T , IndexType >& SparseMatrix< T , IndexType >::operator = (const 
 	for ( int i=0 ; i<rows ; i++ )
 	{
 		SetRowSize( i , M.rowSizes[i] );
-		for( int j=0 ; j<rowSizes[i] ; j++ ) _entries[i][j] = MatrixEntry< T , IndexType >( M._entries[i][j].N , T( M._entries[i][j].Value ) );
+		for( int j=0 ; j<rowSizes[i] ; j++ ) _entries[i][j] = SparseMatrixInterface::MatrixEntry< T , IndexType >( M._entries[i][j].N , T( M._entries[i][j].Value ) );
 	}
 	return *this;
 }
 template< class T , class IndexType >
 template< class T2 >
-Vector< T2 > SparseMatrix< T , IndexType >::operator * ( const Vector< T2 >& V ) const
+Vector::Vector< T2 > SparseMatrix< T , IndexType >::operator * ( const Vector::Vector< T2 >& V ) const
 {
-	Vector< T2 > R( Rows() );
+	Vector::Vector< T2 > R( Rows() );
 	Interface::Multiply( V , R );
 	return R;
 }
@@ -298,9 +295,9 @@ void SparseMatrix< T , IndexType >::resize( size_t r )
 	rows = r;
 	if( r )
 	{
-		rowSizes = AllocPointer< size_t >( r ) , memset( rowSizes , 0 , sizeof(size_t)*r );
-		_entries = AllocPointer< Pointer( MatrixEntry< T , IndexType > ) >( r );
-		for( int i=0 ; i<r ; i++ ) _entries[i] = NullPointer< MatrixEntry< T , IndexType > >( );
+		rowSizes = Array::AllocPointer< size_t >( r ) , memset( rowSizes , 0 , sizeof(size_t)*r );
+		_entries = Array::AllocPointer< Pointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) >( r );
+		for( int i=0 ; i<r ; i++ ) _entries[i] = Array::NullPointer< SparseMatrixInterface::MatrixEntry< T , IndexType > >( );
 	}
 }
 
@@ -312,8 +309,8 @@ void SparseMatrix< T , IndexType >::SetRowSize( size_t row , size_t count )
 		FreePointer( _entries[row] );
 		if( count>0 )
 		{
-			_entries[ row ] = AllocPointer< MatrixEntry< T , IndexType > >( count );
-			memset( _entries[ row ] , 0 , sizeof( MatrixEntry< T , IndexType > )*count );
+			_entries[ row ] = Array::AllocPointer< SparseMatrixInterface::MatrixEntry< T , IndexType > >( count );
+			memset( _entries[ row ] , 0 , sizeof( SparseMatrixInterface::MatrixEntry< T , IndexType > )*count );
 		}
 		rowSizes[row] = count;
 	}
@@ -325,8 +322,8 @@ void SparseMatrix< T , IndexType >::ResetRowSize( size_t row , size_t count )
 	if( row>=0 && row<rows )
 	{
 		size_t oldCount = rowSizes[row];
-		_entries[row] = ReAllocPointer< MatrixEntry< T, IndexType > >( _entries[row] , count );
-		if( count>oldCount ) memset( _entries[row]+oldCount , 0 , sizeof( MatrixEntry< T , IndexType > ) * ( count - oldCount ) );
+		_entries[row] = Array::ReAllocPointer< SparseMatrixInterface::MatrixEntry< T, IndexType > >( _entries[row] , count );
+		if( count>oldCount ) memset( _entries[row]+oldCount , 0 , sizeof( SparseMatrixInterface::MatrixEntry< T , IndexType > ) * ( count - oldCount ) );
 		rowSizes[row] = count;
 	}
 	else fprintf( stderr , "[ERROR] SparseMatrix::ResetRowSize: Row is out of bounds: 0 <= %d < %d\n" , (int)row , (int)rows ) , exit( 0 );
@@ -345,7 +342,7 @@ void SparseMatrix< T , IndexType >::CollapseRow( int r )
 		}
 		SetRowSize( r , (int)rowValues.size() );
 		rowSizes[r] = 0;
-		for( auto iter=rowValues.begin() ; iter!=rowValues.end() ; iter++ ) _entries[r][ rowSizes[r]++ ] = MatrixEntry< T , IndexType >( iter->first , iter->second );
+		for( auto iter=rowValues.begin() ; iter!=rowValues.end() ; iter++ ) _entries[r][ rowSizes[r]++ ] = SparseMatrixInterface::MatrixEntry< T , IndexType >( iter->first , iter->second );
 	}
 }
 template< class T , class IndexType >
@@ -366,7 +363,7 @@ void SparseMatrix< T , IndexType >::CollapseRows( void )
 				}
 				SetRowSize( i , (int)rowValues.size() );
 				rowSizes[i] = 0;
-				for( auto iter=rowValues.begin() ; iter!=rowValues.end() ; iter++ ) _entries[i][ rowSizes[i]++ ] = MatrixEntry< T , IndexType >( iter->first , iter->second );
+				for( auto iter=rowValues.begin() ; iter!=rowValues.end() ; iter++ ) _entries[i][ rowSizes[i]++ ] = SparseMatrixInterface::MatrixEntry< T , IndexType >( iter->first , iter->second );
 			}
 		);
 }
@@ -377,7 +374,7 @@ SparseMatrix< T , IndexType > SparseMatrix< T , IndexType >::Identity( size_t di
 {
 	SparseMatrix I;
 	I.resize( dim );
-	for( int i=0 ; i<dim ; i++ ) I.SetRowSize( i , 1 ) , I[i][0] = MatrixEntry< T , IndexType >( (IndexType)i , (T)1 );
+	for( int i=0 ; i<dim ; i++ ) I.SetRowSize( i , 1 ) , I[i][0] = SparseMatrixInterface::MatrixEntry< T , IndexType >( (IndexType)i , (T)1 );
 	return I;
 }
 template< class T , class IndexType >
@@ -420,7 +417,7 @@ SparseMatrix< T , IndexType > SparseMatrix< T , IndexType >::operator / ( T s ) 
 template< class T , class IndexType >
 Pointer( T ) SparseMatrix< T , IndexType >::operator * ( const Pointer( T ) in ) const
 {
-	Pointer( T ) out = AllocPointer< T >( rows );
+	Pointer( T ) out = Array::AllocPointer< T >( rows );
 	MultiplyParallel( in , out , ThreadPool::NumThreads() , 0 );
 	return out;
 }
@@ -457,7 +454,7 @@ SparseMatrix< T , IndexType > SparseMatrix< T , IndexType >::operator * ( const 
 				}
 				out.SetRowSize( i , (int)row.size() );
 				out.rowSizes[i] = 0;
-				for( typename std::unordered_map< IndexType , T >::iterator iter=row.begin() ; iter!=row.end() ; iter++ ) out[i][ out.rowSizes[i]++ ] = MatrixEntry< T , IndexType >( iter->first , iter->second );
+				for( typename std::unordered_map< IndexType , T >::iterator iter=row.begin() ; iter!=row.end() ; iter++ ) out[i][ out.rowSizes[i]++ ] = SparseMatrixInterface::MatrixEntry< T , IndexType >( iter->first , iter->second );
 			}
 		);
 	return out;
@@ -494,7 +491,7 @@ SparseMatrix< T , IndexType > SparseMatrix< T , IndexType >::operator + ( const 
 					}
 				out.SetRowSize( i , row.size() );
 				out.rowSizes[i] = 0;
-				for( typename std::unordered_map< IndexType , T >::iterator iter=row.begin() ; iter!=row.end() ; iter++ ) out[i][ out.rowSizes[i]++ ] = MatrixEntry< T , IndexType >( iter->first , iter->second );
+				for( typename std::unordered_map< IndexType , T >::iterator iter=row.begin() ; iter!=row.end() ; iter++ ) out[i][ out.rowSizes[i]++ ] = SparseMatrixInterface::MatrixEntry< T , IndexType >( iter->first , iter->second );
 			}
 		);
 	return out;
@@ -531,7 +528,7 @@ SparseMatrix< T , IndexType > SparseMatrix< T , IndexType >::operator - ( const 
 					}
 				out.SetRowSize( i , (int)row.size() );
 				out.rowSizes[i] = 0;
-				for( typename std::unordered_map< IndexType , T >::iterator iter=row.begin() ; iter!=row.end() ; iter++ ) out[i][ out.rowSizes[i]++ ] = MatrixEntry< T , IndexType >( iter->first , iter->second );
+				for( typename std::unordered_map< IndexType , T >::iterator iter=row.begin() ; iter!=row.end() ; iter++ ) out[i][ out.rowSizes[i]++ ] = SparseMatrixInterface::MatrixEntry< T , IndexType >( iter->first , iter->second );
 			}
 		);
 	return out;
@@ -547,7 +544,7 @@ SparseMatrix< T , IndexType > SparseMatrix< T , IndexType >::transpose( T (*Tran
 
 	A.resize( aRows );
 	for( int i=0 ; i<aRows ; i++ ) A.rowSizes[i] = 0;
-	ThreadPool::ParallelFor( 0 , At.rows , [&]( unsigned int , size_t i ){ for( int j=0 ; j<At.rowSizes[i] ; j++ ) Misha::AddAtomic( A.rowSizes[ At[i][j].N ] , (size_t)1 ); } );
+	ThreadPool::ParallelFor( 0 , At.rows , [&]( unsigned int , size_t i ){ for( int j=0 ; j<At.rowSizes[i] ; j++ ) MishaK::Atomic::AddAtomic( A.rowSizes[ At[i][j].N ] , (size_t)1 ); } );
 
 	ThreadPool::ParallelFor
 		(
@@ -564,12 +561,12 @@ SparseMatrix< T , IndexType > SparseMatrix< T , IndexType >::transpose( T (*Tran
 	if( TransposeFunction ) for( int i=0 ; i<At.rows ; i++ ) for( int j=0 ; j<At.rowSizes[i] ; j++ )
 	{
 		int ii = At[i][j].N;
-		A[ii][ A.rowSizes[ii]++ ] = MatrixEntry< T , IndexType >( i , TransposeFunction( At[i][j].Value ) );
+		A[ii][ A.rowSizes[ii]++ ] = SparseMatrixInterface::MatrixEntry< T , IndexType >( i , TransposeFunction( At[i][j].Value ) );
 	}
 	else for( int i=0 ; i<At.rows ; i++ ) for( int j=0 ; j<At.rowSizes[i] ; j++ )
 	{
 		int ii = At[i][j].N;
-		A[ii][ A.rowSizes[ii]++ ] = MatrixEntry< T , IndexType >( i , At[i][j].Value );
+		A[ii][ A.rowSizes[ii]++ ] = SparseMatrixInterface::MatrixEntry< T , IndexType >( i , At[i][j].Value );
 	}
 	return A;
 }
@@ -589,7 +586,7 @@ SparseMatrix< T , IndexType > SparseMatrix< T , IndexType >::transpose( size_t a
 	A.resize( aRows );
 	for( int i=0 ; i<aRows ; i++ ) A.rowSizes[i] = 0;
 
-	ThreadPool::ParallelFor( 0 , At.rows , [&]( unsigned int , size_t i ){ for( int j=0 ; j<At.rowSizes[i] ; j++ ) Misha::AddAtomic( A.rowSizes[ At[i][j].N ] , 1 ); } );
+	ThreadPool::ParallelFor( 0 , At.rows , [&]( unsigned int , size_t i ){ for( int j=0 ; j<At.rowSizes[i] ; j++ ) MishaK::Atomic::AddAtomic( A.rowSizes[ At[i][j].N ] , 1 ); } );
 
 	ThreadPool::ParallelFor
 		(
@@ -607,13 +604,13 @@ SparseMatrix< T , IndexType > SparseMatrix< T , IndexType >::transpose( size_t a
 		for( int i=0 ; i<At.rows ; i++ ) for( int j=0 ; j<At.rowSizes[i] ; j++ )
 		{
 			int ii = At[i][j].N;
-			A[ii][ A.rowSizes[ii]++ ] = MatrixEntry< T , IndexType >( i , TransposeFunction( At[i][j].Value ) );
+			A[ii][ A.rowSizes[ii]++ ] = SparseMatrixInterface::MatrixEntry< T , IndexType >( i , TransposeFunction( At[i][j].Value ) );
 		}
 	else
 		for( int i=0 ; i<At.rows ; i++ ) for( int j=0 ; j<At.rowSizes[i] ; j++ )
 		{
 			int ii = At[i][j].N;
-			A[ii][ A.rowSizes[ii]++ ] = MatrixEntry< T , IndexType >( i , At[i][j].Value );
+			A[ii][ A.rowSizes[ii]++ ] = SparseMatrixInterface::MatrixEntry< T , IndexType >( i , At[i][j].Value );
 		}
 	return A;
 }
@@ -675,14 +672,14 @@ bool TransposeMultiply( const SparseMatrix< T1 , IndexType >& At , const SparseM
 				out.SetRowSize( i , rows[i].size() );
 				out.rowSizes[i] = 0;
 				for( typename std::unordered_map< IndexType , T3 >::iterator iter=rows[i].begin() ; iter!=rows[i].end() ; iter++ )
-					out[i][ out.rowSizes[i]++ ] = MatrixEntry< T3 , IndexType >( iter->first , iter->second );
+					out[i][ out.rowSizes[i]++ ] = SparseMatrixInterface::MatrixEntry< T3 , IndexType >( iter->first , iter->second );
 			}
 		);
 	return true;
 }
 #if MATRIX_MULTIPLY_INTERFACE
 template< class A_T , class A_const_iterator , class B_T , class B_const_iterator , class Out_T , class Out_IndexType >
-bool Multiply( const SparseMatrixInterface< A_T , A_const_iterator >& A , const SparseMatrixInterface< B_T , B_const_iterator >& B , SparseMatrix< Out_T , Out_IndexType >& out , unsigned int threads )
+bool Multiply( const SparseMatrixInterface::SparseMatrixInterface< A_T , A_const_iterator >& A , const SparseMatrixInterface::SparseMatrixInterface< B_T , B_const_iterator >& B , SparseMatrix< Out_T , Out_IndexType >& out , unsigned int threads )
 {
 	size_t aCols = 0 , aRows = A.Rows();
 	size_t bCols = 0 , bRows = B.Rows();
@@ -721,14 +718,14 @@ bool Multiply( const SparseMatrixInterface< A_T , A_const_iterator >& A , const 
 				out.SetRowSize( i , (int)row.size() );
 				out.rowSizes[i] = 0;
 				for( typename std::unordered_map< Out_IndexType , Out_T >::iterator iter=row.begin() ; iter!=row.end() ; iter++ )
-					out[i][ out.rowSizes[i]++ ] = MatrixEntry< Out_T , Out_IndexType >( iter->first , iter->second );
+					out[i][ out.rowSizes[i]++ ] = SparseMatrixInterface::MatrixEntry< Out_T , Out_IndexType >( iter->first , iter->second );
 			} ,
 			threads
 		);
 	return true;
 }
 template< class T , class In_const_iterator , class Out_IndexType >
-bool Transpose( const SparseMatrixInterface< T , In_const_iterator >& At , SparseMatrix< T , Out_IndexType >& A , T (*TransposeFunction)( const T& ) )
+bool Transpose( const SparseMatrixInterface::SparseMatrixInterface< T , In_const_iterator >& At , SparseMatrix< T , Out_IndexType >& A , T (*TransposeFunction)( const T& ) )
 {
 	int aRows = 0 , aCols = (int)At.Rows();
 	for( int i=0 ; i<At.Rows() ; i++ ) for( In_const_iterator iter=At.begin(i) ; iter!=At.end(i) ; iter++ ) if( aRows<=iter->N ) aRows = iter->N+1;
@@ -747,18 +744,18 @@ bool Transpose( const SparseMatrixInterface< T , In_const_iterator >& At , Spars
 		for( int i=0 ; i<At.Rows() ; i++ ) for( In_const_iterator iter=At.begin(i) ; iter!=At.end(i) ; iter++ )
 		{
 			int ii = iter->N;
-			A[ii][ A.rowSizes[ii]++ ] = MatrixEntry< T , Out_IndexType >( i , TransposeFunction( iter->Value ) );
+			A[ii][ A.rowSizes[ii]++ ] = SparseMatrixInterface::MatrixEntry< T , Out_IndexType >( i , TransposeFunction( iter->Value ) );
 		}
 	else
 		for( int i=0 ; i<At.Rows() ; i++ ) for( In_const_iterator iter=At.begin(i) ; iter!=At.end(i) ; iter++ )
 		{
 			int ii = iter->N;
-			A[ii][ A.rowSizes[ii]++ ] = MatrixEntry< T , Out_IndexType >( i , iter->Value );
+			A[ii][ A.rowSizes[ii]++ ] = SparseMatrixInterface::MatrixEntry< T , Out_IndexType >( i , iter->Value );
 		}
 	return true;
 }
 template< class T , class In_const_iterator , class Out_IndexType >
-bool Transpose( const SparseMatrixInterface< T , In_const_iterator >& At , SparseMatrix< T , Out_IndexType >& A , int aRows , T (*TransposeFunction)( const T& ) )
+bool Transpose( const SparseMatrixInterface::SparseMatrixInterface< T , In_const_iterator >& At , SparseMatrix< T , Out_IndexType >& A , int aRows , T (*TransposeFunction)( const T& ) )
 {
 	size_t _aRows = 0 , aCols = At.Rows();
 	for( int i=0 ; i<At.Rows() ; i++ ) for( In_const_iterator iter=At.begin(i) ; iter!=At.end(i) ; iter++ ) if( aCols<=iter->N ) _aRows = iter->N+1;
@@ -782,13 +779,13 @@ bool Transpose( const SparseMatrixInterface< T , In_const_iterator >& At , Spars
 		for( int i=0 ; i<At.Rows() ; i++ ) for( In_const_iterator iter=At.begin(i) ; iter!=At.end(i) ; iter++ )
 		{
 			int ii = iter->N;
-			A[ii][ A.rowSizes[ii]++ ] = MatrixEntry< T , Out_IndexType >( i , TransposeFunction( iter->Value ) );
+			A[ii][ A.rowSizes[ii]++ ] = SparseMatrixInterface::MatrixEntry< T , Out_IndexType >( i , TransposeFunction( iter->Value ) );
 		}
 	else
 		for( int i=0 ; i<At.Rows() ; i++ ) for( In_const_iterator iter=At.begin(i) ; iter!=At.end(i) ; iter++ )
 		{
 			int ii = iter->N;
-			A[ii][ A.rowSizes[ii]++ ] = MatrixEntry< T , Out_IndexType >( i , iter->Value );
+			A[ii][ A.rowSizes[ii]++ ] = SparseMatrixInterface::MatrixEntry< T , Out_IndexType >( i , iter->Value );
 		}
 	return true;
 }
@@ -832,7 +829,7 @@ bool Multiply( const SparseMatrix< T1 , IndexType >& A , const SparseMatrix< T2 
 				out.SetRowSize( i , row.size() );
 				out.rowSizes[i] = 0;
 				for( typename std::unordered_map< IndexType , T3 >::iterator iter=row.begin() ; iter!=row.end() ; iter++ )
-					out[i][ out.rowSizes[i]++ ] = MatrixEntry< T3 , IndexType >( iter->first , iter->second );
+					out[i][ out.rowSizes[i]++ ] = SparseMatrixInterface::MatrixEntry< T3 , IndexType >( iter->first , iter->second );
 			} ,
 			threads
 		);
@@ -859,13 +856,13 @@ bool Transpose( const SparseMatrix< T , IndexType >& At , SparseMatrix< T , Inde
 		for( int i=0 ; i<At.rows ; i++ ) for( int j=0 ; j<At.rowSizes[i] ; j++ ) 
 		{
 			int ii = At[i][j].N;
-			A[ii][ A.rowSizes[ii]++ ] = MatrixEntry< T , IndexType >( i , TransposeFunction( At[i][j].Value ) );
+			A[ii][ A.rowSizes[ii]++ ] = SparseMatrixInterface::MatrixEntry< T , IndexType >( i , TransposeFunction( At[i][j].Value ) );
 		}
 	else
 		for( int i=0 ; i<At.rows ; i++ ) for( int j=0 ; j<At.rowSizes[i] ; j++ ) 
 		{
 			int ii = At[i][j].N;
-			A[ii][ A.rowSizes[ii]++ ] = MatrixEntry< T , IndexType >( i , At[i][j].Value );
+			A[ii][ A.rowSizes[ii]++ ] = SparseMatrixInterface::MatrixEntry< T , IndexType >( i , At[i][j].Value );
 		}
 	return true;
 }
@@ -894,13 +891,13 @@ bool Transpose( const SparseMatrix< T , IndexType >& At , SparseMatrix< T , Inde
 		for( int i=0 ; i<At.rows ; i++ ) for( int j=0 ; j<At.rowSizes[i] ; j++ ) 
 		{
 			int ii = At[i][j].N;
-			A[ii][ A.rowSizes[ii]++ ] = MatrixEntry< T , IndexType >( i , TransposeFunction( At[i][j].Value ) );
+			A[ii][ A.rowSizes[ii]++ ] = SparseMatrixInterface::MatrixEntry< T , IndexType >( i , TransposeFunction( At[i][j].Value ) );
 		}
 	else
 		for( int i=0 ; i<At.rows ; i++ ) for( int j=0 ; j<At.rowSizes[i] ; j++ ) 
 		{
 			int ii = At[i][j].N;
-			A[ii][ A.rowSizes[ii]++ ] = MatrixEntry< T , IndexType >( i , At[i][j].Value );
+			A[ii][ A.rowSizes[ii]++ ] = SparseMatrixInterface::MatrixEntry< T , IndexType >( i , At[i][j].Value );
 		}
 	return true;
 }
@@ -910,23 +907,23 @@ bool Transpose( const SparseMatrix< T , IndexType >& At , SparseMatrix< T , Inde
 
 #define DUMP_OUTPUT 0
 template< class Data >
-double Dot( const Vector< Data >& v1 , const Vector< Data >& v2 , double (*dot)( Data , Data ) )
+double Dot( const Vector::Vector< Data >& v1 , const Vector::Vector< Data >& v2 , double (*dot)( Data , Data ) )
 {
 	double d = 0;
 	for( int i=0 ; i<v1.size() && i<v2.size() ; i++ ) d += dot( v1[i] , v2[i] );
 	return d;
 }
 template< class Data >
-std::complex< double > Dot( const Vector< Data >& v1 , const Vector< Data >& v2 , std::complex< double > (*dot)( Data , Data ) )
+std::complex< double > Dot( const Vector::Vector< Data >& v1 , const Vector::Vector< Data >& v2 , std::complex< double > (*dot)( Data , Data ) )
 {
 	std::complex< double > d = 0;
 	for( int i=0 ; i<v1.size() && i<v2.size() ; i++ ) d += dot( v1[i] , v2[i] );
 	return d;
 }
 template < class Matrix , class Data >
-static int SolveConjugateGradient( const Matrix& SPD , const Vector< Data >& b , const int& iters , Vector< Data >& solution , double (*dot)( Data , Data ) , const double eps )
+static int SolveConjugateGradient( const Matrix& SPD , const Vector::Vector< Data >& b , const int& iters , Vector::Vector< Data >& solution , double (*dot)( Data , Data ) , const double eps )
 {
-	Vector<Data> d,r,Md,temp;
+	Vector::Vector<Data> d,r,Md,temp;
 	double alpha,beta,rDotR,oldRDotR;
 	Md.resize(b.size());
 
@@ -965,7 +962,7 @@ static int SolveConjugateGradient( const Matrix& SPD , const Vector< Data >& b ,
 			break;
 		}
 		rDotR=temp;
-		Vector<Data>::Add(d,beta,r,d);
+		Vector::Vector<Data>::Add(d,beta,r,d);
 	}
 	return i;
 }
@@ -994,9 +991,9 @@ inline std::complex< double > operator * ( std::complex< float > c1 , double c2 
 	return std::complex< double >( c1.real()*c2 , c1.imag()*c2 );
 }
 template < class Matrix , class Data >
-static int SolveConjugateGradient( const Matrix& SPD , const Vector< Data >& b , const int& iters , Vector< Data >& solution , std::complex< double > (*dot)( Data , Data ) , const double eps )
+static int SolveConjugateGradient( const Matrix& SPD , const Vector::Vector< Data >& b , const int& iters , Vector::Vector< Data >& solution , std::complex< double > (*dot)( Data , Data ) , const double eps )
 {
-	Vector< Data > d , r , Md,temp;
+	Vector::Vector< Data > d , r , Md,temp;
 	std::complex< double > alpha;
 	double rDotR , oldRDotR , beta;
 	Md.resize( b.size() );
@@ -1028,14 +1025,14 @@ static int SolveConjugateGradient( const Matrix& SPD , const Vector< Data >& b ,
 		solution.AddScaled( d , alpha );
 		if( beta<=eps ) break;
 		rDotR = _temp;
-		Vector< Data >::Add( d , beta , r , d );
+		Vector::Vector< Data >::Add( d , beta , r , d );
 	}
 	return i;
 }
 template < class Matrix , class Data >
-static int SolveConjugateGradient( const Matrix& SPD , const Vector< Data >& b , const int& iters , Vector< Data >& solution , const double eps )
+static int SolveConjugateGradient( const Matrix& SPD , const Vector::Vector< Data >& b , const int& iters , Vector::Vector< Data >& solution , const double eps )
 {
-	Vector<Data> d,r,Md,temp;
+	Vector::Vector<Data> d,r,Md,temp;
 	double alpha,beta,rDotR,oldRDotR;
 	Md.resize(b.size());
 
@@ -1093,14 +1090,14 @@ static int SolveConjugateGradient( const Matrix& SPD , const Vector< Data >& b ,
 			break;
 		}
 		rDotR=temp;
-		Vector<Data>::Add(d,beta,r,d);
+		Vector::Vector<Data>::Add(d,beta,r,d);
 	}
 	return i;
 }
 template <class Matrix,class IPS,class Real>
-static int SolveConjugateGradient(const Matrix& SPD,const Vector<IPS>& b,const int& iters,Vector<IPS>& solution,const double eps)
+static int SolveConjugateGradient(const Matrix& SPD,const Vector::Vector<IPS>& b,const int& iters,Vector::Vector<IPS>& solution,const double eps)
 {
-	Vector<IPS> d,r,Md,temp;
+	Vector::Vector<IPS> d,r,Md,temp;
 	double alpha,beta,rDotR,oldRDotR;
 	Md.resize(b.size());
 
@@ -1158,16 +1155,16 @@ static int SolveConjugateGradient(const Matrix& SPD,const Vector<IPS>& b,const i
 			break;
 		}
 		rDotR=temp;
-		Vector<IPS>::Add(d,beta,r,d);
+		Vector::Vector<IPS>::Add(d,beta,r,d);
 	}
 	return i;
 }
 
 
 template <class Matrix,class IPS,class Real>
-static int SolveConjugateGradient2(const Matrix& SPD,const Vector<IPS>& b,const int& iters,Vector<IPS>& x,const double eps)
+static int SolveConjugateGradient2(const Matrix& SPD,const Vector::Vector<IPS>& b,const int& iters,Vector::Vector<IPS>& x,const double eps)
 {
-	Vector<IPS> q,d,r;
+	Vector::Vector<IPS> q,d,r;
 	double delta_new,delta_old,delta_0,alpha,beta;
 	q.resize(b.size());
 	SPD.Multiply(x,q);
@@ -1193,7 +1190,7 @@ printf("\t\talpha = %f\n",alpha);
 		beta=delta_new/delta_old;
 printf("\t\t beta = %f\n",beta);
 printf("\t\tresid = %f\n",delta_new/delta_0);
-		Vector<IPS>::Add(d,beta,r,d);
+Vector::Vector<IPS>::Add(d,beta,r,d);
 	}
 printf("Iters: %d / %d\n",i,iters);
 //exit(0);
@@ -1220,18 +1217,18 @@ namespace {
 }
 
 template< class MType , class IndexType , class VType >
-int SolveConjugateGradient( const SparseMatrix< MType , IndexType >& A , const Vector<VType>& b , const int& iters , Vector<VType>& x ,
-						   Vector<VType> (*Multiply)(const SparseMatrix< MType , IndexType >& , const Vector<VType>& ) )
+int SolveConjugateGradient( const SparseMatrix< MType , IndexType >& A , const Vector::Vector<VType>& b , const int& iters , Vector::Vector<VType>& x ,
+	Vector::Vector<VType> (*Multiply)(const SparseMatrix< MType , IndexType >& , const Vector::Vector<VType>& ) )
 {
     VType eps = CGConstants<VType>::eps;
-	Vector<VType> r = b - Multiply(A,x);
-	Vector<VType> d = r;
+	Vector::Vector<VType> r = b - Multiply(A,x);
+	Vector::Vector<VType> d = r;
 	double delta_new = r.Dot(r);
 	double delta_0 = delta_new;
 	int i;
 	for(i=0; i<iters && delta_new>eps*delta_0 ;i++)
 	{
-		Vector<VType> q = Multiply(A,d);
+		Vector::Vector<VType> q = Multiply(A,d);
 		double alpha = delta_new / d.Dot(q);
 		x = x + d*alpha;
 		if( !(i%50) )	r = b - Multiply(A,x);
@@ -1247,17 +1244,17 @@ int SolveConjugateGradient( const SparseMatrix< MType , IndexType >& A , const V
 
 template< class MType , class IndexType , class VType >
 int SolveConjugateGradient(const SparseMatrix<MType, IndexType> &A,
-        const Vector<VType> &b, const int &iters, Vector<VType> &x,
+        const Vector::Vector<VType> &b, const int &iters, Vector::Vector<VType> &x,
         VType eps = CGConstants<VType>::eps)
 {
-	Vector<VType> r = b - A * x;
-	Vector<VType> d = r;
+	Vector::Vector<VType> r = b - A * x;
+	Vector::Vector<VType> d = r;
 	double delta_new = r.Dot(r);
 	double delta_0 = delta_new;
 	int i;
 	for(i = 0; (i < iters) && (delta_new > (eps * delta_0)); i++)
 	{
-		Vector<VType> q = A * d;
+		Vector::Vector<VType> q = A * d;
 		double alpha = delta_new / d.Dot(q);
 		x = x + d*alpha;
 		if( !(i%50) )	r = b - A * x;
@@ -1285,20 +1282,20 @@ int SolveConjugateGradient(const SparseMatrix<MType, IndexType> &A,
 *///////////////////////////////////////////////////////////////////////////////
 template< class MType , class IndexType , class VType >
 int SolveConjugateGradient(const SparseMatrix<MType, IndexType> &A
-        , const Vector<VType> &b, const int &iters, Vector<VType> &x
-        , std::vector<Vector<VType> > &xValues
-        , Vector<VType> (*Multiply)(const SparseMatrix<MType, IndexType>&
-            , const Vector<VType>& ) )
+        , const Vector::Vector<VType> &b, const int &iters, Vector::Vector<VType> &x
+        , std::vector<Vector::Vector<VType> > &xValues
+        , Vector::Vector<VType> (*Multiply)(const SparseMatrix<MType, IndexType>&
+            , const Vector::Vector<VType>& ) )
 {
 	double eps=1e-16;
-	Vector<VType> r = b - Multiply(A,x);
-	Vector<VType> d = r;
+	Vector::Vector<VType> r = b - Multiply(A,x);
+	Vector::Vector<VType> d = r;
 	double delta_new = r.Dot(r);
 	double delta_0 = delta_new;
 	int i;
 	for(i=0; i<iters && delta_new>eps*delta_0 ;i++)
 	{
-		Vector<VType> q = Multiply(A,d);
+		Vector::Vector<VType> q = Multiply(A,d);
 		double alpha = delta_new / d.Dot(q);
 		x = x + d*alpha;
 		if( !(i%50) )	r = b - Multiply(A,x);
@@ -1319,14 +1316,14 @@ int SolveConjugateGradient(const SparseMatrix<MType, IndexType> &A
 //////////////////
 
 template< class T , unsigned int Radius > BandedMatrix< T , Radius >::~BandedMatrix( void ){ _rows = 0 ; FreePointer( _entries ); }
-template< class T , unsigned int Radius > BandedMatrix< T , Radius >::BandedMatrix( void ){ _rows = 0 , _entries = NullPointer< T >(); }
-template< class T , unsigned int Radius > BandedMatrix< T , Radius >::BandedMatrix( size_t rows ){ _rows = 0 , _entries = NullPointer< T >() ; resize( rows ); }
-template< class T , unsigned int Radius > BandedMatrix< T , Radius >::BandedMatrix( size_t rows , const T& clearValue ){ _rows = 0 , _entries = NullPointer< T >() ; resize( rows , clearValue ); }
+template< class T , unsigned int Radius > BandedMatrix< T , Radius >::BandedMatrix( void ){ _rows = 0 , _entries = Array::NullPointer< T >(); }
+template< class T , unsigned int Radius > BandedMatrix< T , Radius >::BandedMatrix( size_t rows ){ _rows = 0 , _entries = Array::NullPointer< T >() ; resize( rows ); }
+template< class T , unsigned int Radius > BandedMatrix< T , Radius >::BandedMatrix( size_t rows , const T& clearValue ){ _rows = 0 , _entries = Array::NullPointer< T >() ; resize( rows , clearValue ); }
 template< class T , unsigned int Radius >
 template< class T2 >
 BandedMatrix< T , Radius >::BandedMatrix( const BandedMatrix< T2 , Radius >& M )
 {
-	_rows = 0 ; _entries = NullPointer< T >();
+	_rows = 0 ; _entries = Array::NullPointer< T >();
 	resize( M._rows );
 	for( size_t i=0 ; i<entries() ; i++ ) _entries[i] = (T)( M._entries[i] );
 }
@@ -1347,7 +1344,7 @@ template< class T , unsigned int Radius > void BandedMatrix< T , Radius >::resiz
 	if( rows )
 	{
 		_rows = rows;
-		_entries = AllocPointer< T >( rows * ( 2 * Radius + 1 ) );
+		_entries = Array::AllocPointer< T >( rows * ( 2 * Radius + 1 ) );
 		if( !_entries ) fprintf( stderr , "[ERROR] BandedMatrix::resize: Failed to allocate BandedMatrix::_entries ( %d x %d )\n" , rows , 2*Radius+1 ) , exit( 0 );
 	}
 }

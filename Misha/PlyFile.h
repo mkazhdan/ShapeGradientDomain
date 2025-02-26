@@ -35,10 +35,11 @@ WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 #include <string>
 #include <vector>
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <string.h>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
+#include <cstring>
 #include "Exceptions.h"
 
 #define PLY_ASCII         1      /* ascii PLY file */
@@ -80,154 +81,156 @@ WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 
 #define PLY_STRIP_COMMENT_HEADER 0
 
-const std::string PlyTypes[]
+namespace PlyFile
 {
-	"start type" ,
-	"char" ,
-	"short" ,
-	"int" ,
-	"long long " ,
-	"unsigned char" ,
-	"unsigned short" ,
-	"unsigned int" ,
-	"unsigned long long" ,
-	"float" ,
-	"double" ,
-	"int8" ,
-	"unsigned int8" ,
-	"int16" ,
-	"unsigned int16" ,
-	"int32" ,
-	"unsigned int32" ,
-	"int64" ,
-	"unsigned int64" ,
-	"float32" ,
-	"float64"
-};
+	const std::string PlyTypes[]
+	{
+		"start type" ,
+		"char" ,
+		"short" ,
+		"int" ,
+		"long long " ,
+		"unsigned char" ,
+		"unsigned short" ,
+		"unsigned int" ,
+		"unsigned long long" ,
+		"float" ,
+		"double" ,
+		"int8" ,
+		"unsigned int8" ,
+		"int16" ,
+		"unsigned int16" ,
+		"int32" ,
+		"unsigned int32" ,
+		"int64" ,
+		"unsigned int64" ,
+		"float32" ,
+		"float64"
+	};
 
-/* description of a property */
-struct PlyProperty
-{
-	std::string name;                     /* property name */
-	int external_type;                    /* file's data type */
-	int internal_type;                    /* program's data type */
-	int offset;                           /* offset bytes of prop in a struct */
+	/* description of a property */
+	struct PlyProperty
+	{
+		std::string name;                     /* property name */
+		int external_type;                    /* file's data type */
+		int internal_type;                    /* program's data type */
+		int offset;                           /* offset bytes of prop in a struct */
 
-	int is_list;                          /* 1 = list, 0 = scalar */
-	int count_external;                   /* file's count type */
-	int count_internal;                   /* program's count type */
-	int count_offset;                     /* offset byte for list count */
+		int is_list;                          /* 1 = list, 0 = scalar */
+		int count_external;                   /* file's count type */
+		int count_internal;                   /* program's count type */
+		int count_offset;                     /* offset byte for list count */
 
-	PlyProperty( const std::string &n , int et , int it , int o , int il=0 , int ce=0 , int ci=0 , int co=0 ) : name(n) , external_type(et) , internal_type(it) , offset(o) , is_list(il) , count_external(ce) , count_internal(ci) , count_offset(co){ }
-	PlyProperty( const std::string &n ) : PlyProperty( n , 0 , 0 , 0 , 0 , 0 , 0 , 0 ){ }
-	PlyProperty( void ) : external_type(0) , internal_type(0) , offset(0) , is_list(0) , count_external(0) , count_internal(0) , count_offset(0){ }
-};
+		PlyProperty( const std::string &n , int et , int it , int o , int il=0 , int ce=0 , int ci=0 , int co=0 ) : name(n) , external_type(et) , internal_type(it) , offset(o) , is_list(il) , count_external(ce) , count_internal(ci) , count_offset(co){ }
+		PlyProperty( const std::string &n ) : PlyProperty( n , 0 , 0 , 0 , 0 , 0 , 0 , 0 ){ }
+		PlyProperty( void ) : external_type(0) , internal_type(0) , offset(0) , is_list(0) , count_external(0) , count_internal(0) , count_offset(0){ }
+	};
 
-std::ostream &operator << ( std::ostream &os , PlyProperty p )
-{
-	return os << "{ " << p.name << " , " << PlyTypes[ p.external_type ] << " , " << PlyTypes[ p.internal_type ] << " , " << p.offset << " }";
-}
+	std::ostream &operator << ( std::ostream &os , PlyProperty p )
+	{
+		return os << "{ " << p.name << " , " << PlyTypes[ p.external_type ] << " , " << PlyTypes[ p.internal_type ] << " , " << p.offset << " }";
+	}
 
 
-struct PlyStoredProperty
-{
-	PlyProperty prop ; char store;
-	PlyStoredProperty( void ){ }
-	PlyStoredProperty( const PlyProperty &p , char s ) : prop(p) , store(s){ }
-};
+	struct PlyStoredProperty
+	{
+		PlyProperty prop ; char store;
+		PlyStoredProperty( void ){ }
+		PlyStoredProperty( const PlyProperty &p , char s ) : prop(p) , store(s){ }
+	};
 
-/* description of an element */
-struct PlyElement
-{
-	std::string name;             /* element name */
-	size_t num;                   /* number of elements in this object */
-	int size;                     /* size of element (bytes) or -1 if variable */
-	std::vector< PlyStoredProperty > props; /* list of properties in the file */
-	int other_offset;             /* offset to un-asked-for props, or -1 if none*/
-	int other_size;               /* size of other_props structure */
-	inline PlyProperty *find_property( const std::string &prop_name , int &index );
-};
+	/* description of an element */
+	struct PlyElement
+	{
+		std::string name;             /* element name */
+		size_t num;                   /* number of elements in this object */
+		int size;                     /* size of element (bytes) or -1 if variable */
+		std::vector< PlyStoredProperty > props; /* list of properties in the file */
+		int other_offset;             /* offset to un-asked-for props, or -1 if none*/
+		int other_size;               /* size of other_props structure */
+		inline PlyProperty *find_property( const std::string &prop_name , int &index );
+	};
 
-/* describes other properties in an element */
-struct PlyOtherProp
-{
-	std::string name;                   /* element name */
-	int size;                           /* size of other_props */
-	std::vector< PlyProperty > props;   /* list of properties in other_props */
-};
+	/* describes other properties in an element */
+	struct PlyOtherProp
+	{
+		std::string name;                   /* element name */
+		int size;                           /* size of other_props */
+		std::vector< PlyProperty > props;   /* list of properties in other_props */
+	};
 
-/* storing other_props for an other element */
-struct OtherData
-{
-	void *other_props;
-	OtherData( void ) : other_props(NULL){ }
-	~OtherData( void ){ if( other_props ) free( other_props ); }
-};
+	/* storing other_props for an other element */
+	struct OtherData
+	{
+		void *other_props;
+		OtherData( void ) : other_props(NULL){ }
+		~OtherData( void ){ if( other_props ) free( other_props ); }
+	};
 
-/* data for one "other" element */
-struct OtherElem
-{
-	std::string elem_name;                /* names of other elements */
-	std::vector< OtherData > other_data;  /* actual property data for the elements */
-	PlyOtherProp other_props;             /* description of the property data */
-};
+	/* data for one "other" element */
+	struct OtherElem
+	{
+		std::string elem_name;                /* names of other elements */
+		std::vector< OtherData > other_data;  /* actual property data for the elements */
+		PlyOtherProp other_props;             /* description of the property data */
+	};
 
-/* "other" elements, not interpreted by user */
-struct PlyOtherElems
-{
-	std::vector< OtherElem > other_list; /* list of data for other elements */
-};
+	/* "other" elements, not interpreted by user */
+	struct PlyOtherElems
+	{
+		std::vector< OtherElem > other_list; /* list of data for other elements */
+	};
 
-/* description of PLY file */
-struct PlyFile
-{
-	FILE *fp;                            /* file pointer */
-	int file_type;                       /* ascii or binary */
-	float version;                       /* version number of file */
-	std::vector< PlyElement > elems;     /* list of elements of object */
-	std::vector< std::string > comments; /* list of comments */
-	std::vector< std::string > obj_info; /* list of object info items */
-	PlyElement *which_elem;              /* which element we're currently writing */
-	PlyOtherElems *other_elems;         /* "other" elements from a PLY file */
+	/* description of PLY file */
+	struct PlyFile
+	{
+		FILE *fp;                            /* file pointer */
+		int file_type;                       /* ascii or binary */
+		float version;                       /* version number of file */
+		std::vector< PlyElement > elems;     /* list of elements of object */
+		std::vector< std::string > comments; /* list of comments */
+		std::vector< std::string > obj_info; /* list of object info items */
+		PlyElement *which_elem;              /* which element we're currently writing */
+		PlyOtherElems *other_elems;         /* "other" elements from a PLY file */
 
-	static inline PlyFile *Write( const std::string & , const std::vector< std::string > & , int   , float & );
-	static inline PlyFile *Read ( const std::string & ,       std::vector< std::string > & , int & , float & );
+		static inline PlyFile *Write( const std::string & , const std::vector< std::string > & , int   , float & );
+		static inline PlyFile *Read ( const std::string & ,       std::vector< std::string > & , int & , float & );
 
-	PlyFile( FILE *f ) : fp(f) , other_elems(NULL) , version(1.) { }
-	~PlyFile( void ){ if( fp ) fclose(fp) ; if(other_elems) delete other_elems; }
+		PlyFile( FILE *f ) : fp(f) , other_elems(NULL) , version(1.) { }
+		~PlyFile( void ){ if( fp ) fclose(fp) ; if(other_elems) delete other_elems; }
 
-	inline void describe_element ( const std::string & , size_t , int , const PlyProperty * );
-	inline void describe_property( const std::string & , const PlyProperty * );
-	inline void describe_other_elements( PlyOtherElems * );
-	inline PlyElement *find_element( const std::string & );
-	inline void element_count( const std::string & , size_t );
-	inline void header_complete( void );
-	inline void put_element_setup( const std::string & );
-	inline void put_element ( void * );
-	inline void put_comment ( const std::string & );
-	inline void put_obj_info( const std::string & );
-	inline void put_other_elements( void );
-	inline void add_element ( const std::vector< std::string > & );
-	inline void add_property( const std::vector< std::string > & );
-	inline void add_comment ( const std::string & );
-	inline void add_obj_info( const std::string & );
+		inline void describe_element ( const std::string & , size_t , int , const PlyProperty * );
+		inline void describe_property( const std::string & , const PlyProperty * );
+		inline void describe_other_elements( PlyOtherElems * );
+		inline PlyElement *find_element( const std::string & );
+		inline void element_count( const std::string & , size_t );
+		inline void header_complete( void );
+		inline void put_element_setup( const std::string & );
+		inline void put_element ( void * );
+		inline void put_comment ( const std::string & );
+		inline void put_obj_info( const std::string & );
+		inline void put_other_elements( void );
+		inline void add_element ( const std::vector< std::string > & );
+		inline void add_property( const std::vector< std::string > & );
+		inline void add_comment ( const std::string & );
+		inline void add_obj_info( const std::string & );
 
-	inline std::vector< PlyProperty * > get_element_description( const std::string & , size_t & );
-	inline void get_element_setup( const std::string & , int , PlyProperty * );
-	inline int get_property( const std::string & , const PlyProperty * );
-	inline void describe_other_properties( const PlyOtherProp & , int );
-	inline bool set_other_properties( const std::string & , int , PlyOtherProp & );
-	inline void get_element( void * );
-	inline std::vector< std::string > &get_comments( void );
-	inline std::vector< std::string > &get_obj_info( void );
-	inline void get_info( float & , int & );
-	inline PlyOtherElems *get_other_element( std::string & , size_t );
-protected:
-	inline void _ascii_get_element ( void * );
-	inline void _binary_get_element( void * );
-	static inline PlyFile *_Write( FILE * , const std::vector< std::string > & , int );
-	static inline PlyFile *_Read ( FILE * ,       std::vector< std::string > & );
-};
-
+		inline std::vector< PlyProperty * > get_element_description( const std::string & , size_t & );
+		inline void get_element_setup( const std::string & , int , PlyProperty * );
+		inline int get_property( const std::string & , const PlyProperty * );
+		inline void describe_other_properties( const PlyOtherProp & , int );
+		inline bool set_other_properties( const std::string & , int , PlyOtherProp & );
+		inline void get_element( void * );
+		inline std::vector< std::string > &get_comments( void );
+		inline std::vector< std::string > &get_obj_info( void );
+		inline void get_info( float & , int & );
+		inline PlyOtherElems *get_other_element( std::string & , size_t );
+	protected:
+		inline void _ascii_get_element ( void * );
+		inline void _binary_get_element( void * );
+		static inline PlyFile *_Write( FILE * , const std::vector< std::string > & , int );
+		static inline PlyFile *_Read ( FILE * ,       std::vector< std::string > & );
+	};
 #include "PlyFile.inl"
+}
 #endif // PLY_FILE_INCLUDED

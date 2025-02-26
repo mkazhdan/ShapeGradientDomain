@@ -5,6 +5,10 @@
 #ifndef POLY34_INCLUDED
 #define POLY34_INCLUDED
 
+#include <math.h>
+
+#define MARC_ALEXA_FIX
+
 namespace Poly34
 {
 																														// x - array of size 1
@@ -32,7 +36,8 @@ namespace Poly34
 																														// return 3: 3 real roots x[0], x[1], x[2] and complex x[3]±i*x[4], 
 																														// return 1: 1 real root x[0] and two pair of complex roots: x[1]±i*x[2],  x[3]±i*x[4], 
 	static unsigned int SolveP5( double *x , double a , double b , double c , double d , double e , double eps=1e-14 );	// solve equation x^5 + a*x^4 + b*x^3 + c*x^2 + d*x + e = 0
-}
 
 #include "Poly34.inl"
+}
+
 #endif // POLY34_INCLUDED

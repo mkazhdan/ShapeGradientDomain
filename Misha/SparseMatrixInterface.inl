@@ -288,12 +288,12 @@ template< class SPDOperator , class T > int SolveCG( const SPDOperator& M , Cons
 {
 	eps *= eps;
 	int dim = M.Rows();
-	Pointer( T ) r = AllocPointer< T >( dim );
-	Pointer( T ) d = AllocPointer< T >( dim );
-	Pointer( T ) q = AllocPointer< T >( dim );
-	Pointer( T ) temp = NullPointer< T >( );
+	Pointer( T ) r = Array::AllocPointer< T >( dim );
+	Pointer( T ) d = Array::AllocPointer< T >( dim );
+	Pointer( T ) q = Array::AllocPointer< T >( dim );
+	Pointer( T ) temp = Array::NullPointer< T >( );
 	memset( x , 0 , sizeof(T)* dim );
-	if( solveNormal ) temp = AllocPointer< T >( dim );
+	if( solveNormal ) temp = Array::AllocPointer< T >( dim );
 
 	double delta_new = 0 , delta_0;
 	if( solveNormal )

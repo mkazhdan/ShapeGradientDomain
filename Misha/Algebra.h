@@ -31,248 +31,255 @@ DAMAGE.
 
 #include <cmath>
 
-template<class Element>
-class Group
+namespace MishaK
 {
-public:
-	// For this to work, need to define:
-	// void Element::SetIdentity	(void);
-	// void Element::Multiply		(const Element& e)
-	// void Element::Invert			(void)
+	namespace Algebra
+	{
 
-	static Element Identity(void)
-	{
-		Element out;
-		out.SetIdentity();
-		return out;
-	}
-	Element inverse(void) const
-	{
-		Element out=*(Element*)this;
-		out.Invert();
-		return out;
-	}
-	friend Element  operator *  (const Element& e1,const Element& e2)
-	{
-		Element out=e1;
-		out.Multiply(e2);
-		return out;
-	}
-	friend Element operator /  (const Element& e1,const Element& e2)
-	{
-		Element out=e1;
-		Element inv=e2.Invert();
-		out.Multiply(inv);
-		return out;
-	}
-	friend Element& operator *= (Element& e1,const Element& e2)
-	{
-		e1.Multiply(e2);
-		return e1;
-	}
-	friend Element& operator /= (Element& e1,const Element& e2)
-	{
-		Element inv=e2;
-		inv.Invert();
-		e1.Multiply(inv);
-		return e1;
-	}
-};
+		template<class Element>
+		class Group
+		{
+		public:
+			// For this to work, need to define:
+			// void Element::SetIdentity	(void);
+			// void Element::Multiply		(const Element& e)
+			// void Element::Invert			(void)
 
-template< class Real , class Element >
-class VectorSpace
-{
-public:
-	typedef Real R;
-	// For this to work, need to define:
-	// void Element::Add(const Element& e)
-	// void Element::Scale(Real s)
-	friend Element operator - ( const Element& e )
-	{
-		Element out=e;
-		out.Scale(-1);
-		return out;
-	}
+			static Element Identity(void)
+			{
+				Element out;
+				out.SetIdentity();
+				return out;
+			}
+			Element inverse(void) const
+			{
+				Element out=*(Element*)this;
+				out.Invert();
+				return out;
+			}
+			friend Element  operator *  (const Element& e1,const Element& e2)
+			{
+				Element out=e1;
+				out.Multiply(e2);
+				return out;
+			}
+			friend Element operator /  (const Element& e1,const Element& e2)
+			{
+				Element out=e1;
+				Element inv=e2.Invert();
+				out.Multiply(inv);
+				return out;
+			}
+			friend Element& operator *= (Element& e1,const Element& e2)
+			{
+				e1.Multiply(e2);
+				return e1;
+			}
+			friend Element& operator /= (Element& e1,const Element& e2)
+			{
+				Element inv=e2;
+				inv.Invert();
+				e1.Multiply(inv);
+				return e1;
+			}
+		};
 
-	friend Element operator + (const Element& e1,const Element& e2)
-	{
-		Element out=e1;
-		out.Add(e2);
-		return out;
-	};
-	friend Element  operator - (const Element& e1,const Element& e2)
-	{
-		Element out=e2;
-		out.Scale(-1);
-		out.Add(e1);
-		return out;
-	}
-	friend Element& operator += (Element& e1,const Element& e2)
-	{
-		e1.Add(e2);
-		return e1;
-	}
-	friend Element& operator -= (Element& e1,const Element& e2)
-	{
-		Element neg=e2;
-		neg.Scale(-1);
-		return e1+=neg;
-	}
+		template< class Real , class Element >
+		class VectorSpace
+		{
+		public:
+			typedef Real R;
+			// For this to work, need to define:
+			// void Element::Add(const Element& e)
+			// void Element::Scale(Real s)
+			friend Element operator - ( const Element& e )
+			{
+				Element out=e;
+				out.Scale(-1);
+				return out;
+			}
 
-	friend Element  operator * (const Element& e,const Real& s)
-	{
-		Element out=e;
-		out.Scale(s);
-		return out;
-	}
-	friend Element  operator * (const Real& s,const Element& e)
-	{
-		return e*s;
-	}
-	friend Element  operator /  (const Element& e,const Real& s)
-	{
-		return e*(Real(1)/s);
-	}
+			friend Element operator + (const Element& e1,const Element& e2)
+			{
+				Element out=e1;
+				out.Add(e2);
+				return out;
+			};
+			friend Element  operator - (const Element& e1,const Element& e2)
+			{
+				Element out=e2;
+				out.Scale(-1);
+				out.Add(e1);
+				return out;
+			}
+			friend Element& operator += (Element& e1,const Element& e2)
+			{
+				e1.Add(e2);
+				return e1;
+			}
+			friend Element& operator -= (Element& e1,const Element& e2)
+			{
+				Element neg=e2;
+				neg.Scale(-1);
+				return e1+=neg;
+			}
 
-	friend Element& operator *= (Element& e,const Real& s)
-	{
-		e.Scale(s);
-		return e;
-	}
-	friend Element& operator /= (Element& e,const Real& s)
-	{
-		return e*=Real(1)/s;
-	}
-};
+			friend Element  operator * (const Element& e,const Real& s)
+			{
+				Element out=e;
+				out.Scale(s);
+				return out;
+			}
+			friend Element  operator * (const Real& s,const Element& e)
+			{
+				return e*s;
+			}
+			friend Element  operator /  (const Element& e,const Real& s)
+			{
+				return e*(Real(1)/s);
+			}
 
-template< class Real , class Element >
-class InnerProductSpace : public VectorSpace< Real , Element >
-{
-public:
-	// For this to work, need to define:
-	// Real Element::InnerProduct	(const Element& e) const
+			friend Element& operator *= (Element& e,const Real& s)
+			{
+				e.Scale(s);
+				return e;
+			}
+			friend Element& operator /= (Element& e,const Real& s)
+			{
+				return e*=Real(1)/s;
+			}
+		};
 
-	static Real SquareNorm		(const Element& e)						{ return e.InnerProduct(e); }
-	static Real Dot				(const Element& e1,const Element& e2)	{ return e1.InnerProduct(e2); }
-	static Real SquareDistance	(const Element& e1,const Element& e2)	{ return SquareNorm(e1-e2); }
-	static Real Length          (const Element& e)                      { return Real( sqrt( e.InnerProduct(e) ) ); }
-	Real squareNorm( void ) const { return SquareNorm( *( ( Element* )this ) ); }
-};
+		template< class Real , class Element >
+		class InnerProductSpace : public VectorSpace< Real , Element >
+		{
+		public:
+			// For this to work, need to define:
+			// Real Element::InnerProduct	(const Element& e) const
 
-template<class Real,class Element>
-class Algebra : public VectorSpace<Real,Element>
-{
-public:
-	virtual void SetIdentity	(void)				= 0;
-	virtual void Multiply		(const Element& e)	= 0;
+			static Real SquareNorm		(const Element& e)						{ return e.InnerProduct(e); }
+			static Real Dot				(const Element& e1,const Element& e2)	{ return e1.InnerProduct(e2); }
+			static Real SquareDistance	(const Element& e1,const Element& e2)	{ return SquareNorm(e1-e2); }
+			static Real Length          (const Element& e)                      { return Real( sqrt( e.InnerProduct(e) ) ); }
+			Real squareNorm( void ) const { return SquareNorm( *( ( Element* )this ) ); }
+		};
 
-	static Element Identity(void)
-	{
-		Element out;
-		out.SetIdentity();
-		return out;
-	}
+		template<class Real,class Element>
+		class Algebra : public VectorSpace<Real,Element>
+		{
+		public:
+			virtual void SetIdentity	(void)				= 0;
+			virtual void Multiply		(const Element& e)	= 0;
 
-	friend Element  operator *  (const Element& e1,const Element& e2)
-	{
-		Element out=e1;
-		out.Multiply(e2);
-		return out;
-	}
+			static Element Identity(void)
+			{
+				Element out;
+				out.SetIdentity();
+				return out;
+			}
 
-	friend Element& operator *= (Element& e1,const Element& e2)
-	{
-		e1.Multiply(e2);
-		return e1;
-	}
-};
+			friend Element  operator *  (const Element& e1,const Element& e2)
+			{
+				Element out=e1;
+				out.Multiply(e2);
+				return out;
+			}
 
-template< class Element >
-class Field
-{
-public:
-	typedef Element R;
-	// For this to work, need to define:
-	// void Element::SetAdditiveIdentity		(void);
-	// void Element::SetMultiplicativeIdentity	(void);
-	// void Element::Add						(const Element& e);
-	// void Element::Multiply					(const Element& e);
-	// void Element::Negate						(void);
-	// void Element::Invert						(void);
+			friend Element& operator *= (Element& e1,const Element& e2)
+			{
+				e1.Multiply(e2);
+				return e1;
+			}
+		};
 
-	static Element AdditiveIdentity(void)
-	{
-		Element out;
-		out.SetAdditiveIdentity();
-		return out;
+		template< class Element >
+		class Field
+		{
+		public:
+			typedef Element R;
+			// For this to work, need to define:
+			// void Element::SetAdditiveIdentity		(void);
+			// void Element::SetMultiplicativeIdentity	(void);
+			// void Element::Add						(const Element& e);
+			// void Element::Multiply					(const Element& e);
+			// void Element::Negate						(void);
+			// void Element::Invert						(void);
+
+			static Element AdditiveIdentity(void)
+			{
+				Element out;
+				out.SetAdditiveIdentity();
+				return out;
+			}
+			static Element MultiplicativeIdentity(void)
+			{
+				Element out;
+				out.SetMultiplicativeIdentity();
+				return out;
+			}
+			Element additiveInverse(void) const
+			{
+				Element out=*(Element*)this;
+				out.Negate();
+				return out;
+			}
+			Element multiplicativeInverse(void) const
+			{
+				Element out=*(Element*)this;
+				out.Invert();
+				return out;
+			}
+			friend Element operator + ( const Element& e1 , const Element& e2 )
+			{
+				Element out=e1;
+				out.Add(e2);
+				return out;
+			}
+			friend Element operator * ( const Element& e1 , const Element& e2 )
+			{
+				Element out=e1;
+				out.Multiply(e2);
+				return out;
+			}
+			friend Element operator - (const Element& e1,const Element& e2)
+			{
+				Element out=e1;
+				Element inv=e2.Negate();
+				out.Add(inv);
+				return out;
+			}
+			friend Element operator / (const Element& e1,const Element& e2)
+			{
+				Element out=e1;
+				Element inv=e2.Invert();
+				out.Multiply(inv);
+				return out;
+			}
+			friend Element& operator += (Element& e1,const Element& e2)
+			{
+				e1.Add(e2);
+				return e1;
+			}
+			friend Element& operator *= (Element& e1,const Element& e2)
+			{
+				e1.Multiply(e2);
+				return e1;
+			}
+			friend Element& operator -= (Element& e1,const Element& e2)
+			{
+				Element inv=e2;
+				inv.Negate();
+				e1.Add(inv);
+				return e1;
+			}
+			friend Element& operator /= (Element& e1,const Element& e2)
+			{
+				Element inv=e2;
+				inv.Invert();
+				e1.Multiply(inv);
+				return e1;
+			}
+		};
 	}
-	static Element MultiplicativeIdentity(void)
-	{
-		Element out;
-		out.SetMultiplicativeIdentity();
-		return out;
-	}
-	Element additiveInverse(void) const
-	{
-		Element out=*(Element*)this;
-		out.Negate();
-		return out;
-	}
-	Element multiplicativeInverse(void) const
-	{
-		Element out=*(Element*)this;
-		out.Invert();
-		return out;
-	}
-	friend Element operator + ( const Element& e1 , const Element& e2 )
-	{
-		Element out=e1;
-		out.Add(e2);
-		return out;
-	}
-	friend Element operator * ( const Element& e1 , const Element& e2 )
-	{
-		Element out=e1;
-		out.Multiply(e2);
-		return out;
-	}
-	friend Element operator - (const Element& e1,const Element& e2)
-	{
-		Element out=e1;
-		Element inv=e2.Negate();
-		out.Add(inv);
-		return out;
-	}
-	friend Element operator / (const Element& e1,const Element& e2)
-	{
-		Element out=e1;
-		Element inv=e2.Invert();
-		out.Multiply(inv);
-		return out;
-	}
-	friend Element& operator += (Element& e1,const Element& e2)
-	{
-		e1.Add(e2);
-		return e1;
-	}
-	friend Element& operator *= (Element& e1,const Element& e2)
-	{
-		e1.Multiply(e2);
-		return e1;
-	}
-	friend Element& operator -= (Element& e1,const Element& e2)
-	{
-		Element inv=e2;
-		inv.Negate();
-		e1.Add(inv);
-		return e1;
-	}
-	friend Element& operator /= (Element& e1,const Element& e2)
-	{
-		Element inv=e2;
-		inv.Invert();
-		e1.Multiply(inv);
-		return e1;
-	}
-};
+}
 #endif // ALGEBRA_INCLUDED

@@ -30,7 +30,6 @@ DAMAGE.
 #define __VECTORIMPL_HPP
 
 #define Assert assert
-#include <cassert>
 
 ////////////
 // Vector //
@@ -46,14 +45,14 @@ Vector<T>::Vector()
 {
 	m_N = 0;
 //	m_pV = 0;
-	m_pV = NullPointer< T >( );
+	m_pV = Array::NullPointer< T >( );
 }
 template<class T>
 Vector<T>::Vector( const Vector<T>& V )
 {
 	m_N = 0;
 //	m_pV = 0;
-	m_pV = NullPointer< T >( );
+	m_pV = Array::NullPointer< T >( );
 	resize(V.m_N);
 	memcpy( m_pV, V.m_pV, m_N*sizeof(T) );
 }
@@ -62,7 +61,7 @@ Vector<T>::Vector( size_t N )
 {
 	m_N=0;
 //	m_pV=0;
-	m_pV = NullPointer< T >( );
+	m_pV = Array::NullPointer< T >( );
 	resize(N);
 }
 template<class T>
@@ -71,7 +70,7 @@ void Vector<T>::resize( size_t N )
 	if( m_N!=N )
 	{
 		if( m_N ) FreePointer( m_pV );
-		m_pV = NullPointer< T >( );
+		m_pV = Array::NullPointer< T >( );
 		m_N = N;
 		if( N ) m_pV = AllocPointer< T >( N );
 	}
