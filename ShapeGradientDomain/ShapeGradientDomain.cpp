@@ -53,7 +53,6 @@ using namespace MishaK;
 using namespace MishaK::CmdLineParser;
 using namespace MishaK::Geometry;
 using namespace MishaK::Array;
-using namespace MishaK::MultiThreading;
 
 enum struct SignalType
 {

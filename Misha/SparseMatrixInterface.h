@@ -37,8 +37,6 @@ namespace MishaK
 {
 	namespace SparseMatrixInterface
 	{
-		using namespace MultiThreading;
-
 #if FORCE_TWO_BYTE_ALIGNMENT
 #pragma pack(push)
 #pragma pack(2)
@@ -85,7 +83,7 @@ namespace MishaK
 
 			template< class T2 > void SetDiagonal( Pointer( T2 ) diagonal ) const;
 			template< class T2 > void JacobiIteration( ConstPointer( T2 ) diagonal , ConstPointer( T2 ) b , Pointer( T2 ) x , Pointer( T2 ) Mx , T2 sor ) const;
-			template< class T2 > void JacobiIteration( ConstPointer( T2 ) diagonal , ConstPointer( T2 ) b , Pointer( T2 ) x , T2 sor ) const { Pointer( T2 ) Mx = AllocPointer< T2 >( Rows() ) ; JacobiIteration( diagonal , b , x , Mx , sor ) ; FreePointer( Mx ); }
+			template< class T2 > void JacobiIteration( ConstPointer( T2 ) diagonal , ConstPointer( T2 ) b , Pointer( T2 ) x , T2 sor ) const { Pointer( T2 ) Mx = Array::AllocPointer< T2 >( Rows() ) ; JacobiIteration( diagonal , b , x , Mx , sor ) ; FreePointer( Mx ); }
 #if 1
 			template< class T2 , bool StripDiagonal=false > void GSIteration(                                                        ConstPointer( T2 ) diagonal , ConstPointer( T2 ) b , Pointer( T2 ) x , bool forward ) const;
 			template< class T2 , bool StripDiagonal=false > void GSIteration( std::vector< std::vector< int > >& multiColorIndices , ConstPointer( T2 ) diagonal , ConstPointer( T2 ) b , Pointer( T2 ) x , bool forward ) const;

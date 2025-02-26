@@ -43,8 +43,6 @@ namespace MishaK
 {
 	namespace SparseMatrix
 	{
-		using namespace MultiThreading;
-
 		template< class T , class IndexType > class SparseMatrix : public SparseMatrixInterface::SparseMatrixInterface< T , ConstPointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) >
 		{
 			template< class T2 , class IndexType2 > friend class SparseMatrix;

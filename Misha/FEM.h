@@ -80,7 +80,6 @@ namespace MishaK
 	{	
 		using namespace Array;
 		using namespace Geometry;
-		using namespace MultiThreading;
 		using namespace SparseMatrixInterface;
 
 		//////////////
