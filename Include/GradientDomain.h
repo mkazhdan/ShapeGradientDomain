@@ -115,12 +115,8 @@ namespace MishaK
 				for( unsigned int i=0 ; i< lowM.cols() ; i++ ) l[i] = Array< T >::template Entry< D >(  Low(i) );
 				for( unsigned int i=0 ; i<highM.cols() ; i++ ) h[i] = Array< T >::template Entry< D >( High(i) );
 
-#ifdef EIGEN_USE_MKL_ALL
 				Eigen::Matrix< Real , Eigen::Dynamic , 1 > b = lowM * l + highM * h;
 				Eigen::Matrix< Real , Eigen::Dynamic , 1 > x = solver.solve( b );
-#else // !EIGEN_USE_MKL_ALL
-				Eigen::Matrix< Real , Eigen::Dynamic , 1 > x = solver.solve( lowM * l + highM * h );
-#endif // EIGEN_USE_MKL_ALL
 
 				for( unsigned int i=0 ; i<x.size() ; i++ ) Array< T >::template Entry< D >( out[i] ) = x[i];
 				_Solve< D+1 >( solver , lowM , highM , std::forward< LowFrequencyVertexFunctor >( Low ) , std::forward< HighFrequencyVertexFunctor >( High ) , out );
