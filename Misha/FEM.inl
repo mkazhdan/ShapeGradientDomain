@@ -126,7 +126,7 @@ inline Point2D< Real > FEM::RightTriangle< Real >::Center( const SquareMatrix< R
 				if( det>maxDet )
 				{
 					Point2D< Real > x = M.inverse() * ( c1 - c2 );
-					c = ( c1 + v1 * x[0] + c2 + v2 * x[1] ) / 2;
+					c = ( c1 + v1 * x[0] + c2 + v2 * x[1] ) / static_cast< Real >( 2 );
 					maxDet = det;
 				}
 			}
@@ -160,7 +160,7 @@ inline Point2D< Real > FEM::RightTriangle< Real >::Center( const SquareMatrix< R
 				if( det>maxDet )
 				{
 					Point2D< Real > x = M.inverse() * ( c1 - c2 );
-					c = ( c1 + v1 * x[0] + c2 + v2 * x[1] ) / 2;
+					c = ( c1 + v1 * x[0] + c2 + v2 * x[1] ) / static_cast< Real >( 2 );
 					maxDet = det;
 				}
 			}
@@ -436,7 +436,7 @@ typename FEM::BasisInfoSystem< Real , BasisType >::Point FEM::RightTriangle< Rea
 			break;
 		case BASIS_1_CONFORMING:
 		{
-			Point3D< Real > areas = CenterAreas( tensor , CENTER_CIRCUMCENTRIC )*2;
+			Point3D< Real > areas = CenterAreas( tensor , CENTER_CIRCUMCENTRIC ) * static_cast< Real >( 2 );
 			mass[0] = mass[1] = areas[0] / SquareLength( tensor , EdgeDirections[0] );
 			mass[2] = mass[3] = areas[1] / SquareLength( tensor , EdgeDirections[1] );
 			mass[4] = mass[5] = areas[2] / SquareLength( tensor , EdgeDirections[2] );
@@ -444,7 +444,7 @@ typename FEM::BasisInfoSystem< Real , BasisType >::Point FEM::RightTriangle< Rea
 		}
 		case BASIS_1_WHITNEY:
 		{
-			Point3D< Real > areas = CenterAreas( tensor , CENTER_CIRCUMCENTRIC )*2;
+			Point3D< Real > areas = CenterAreas( tensor , CENTER_CIRCUMCENTRIC ) * static_cast< Real >( 2 );
 			mass[0] = areas[0] / SquareLength( tensor , EdgeDirections[0] );
 			mass[1] = areas[1] / SquareLength( tensor , EdgeDirections[1] );
 			mass[2] = areas[2] / SquareLength( tensor , EdgeDirections[2] );

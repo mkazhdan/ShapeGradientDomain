@@ -276,14 +276,15 @@ int _main( void )
 					pCurvatures[0] *= pCurvatures[0];
 					pCurvatures[1] *= pCurvatures[1];
 					if( !Anisotropic.set ) pCurvatures[0] = pCurvatures[1] = ( pCurvatures[0] + pCurvatures[1] ) / (Real)2.;
-					return Point< Real , 2 >( (Real)1. , (Real)1. ) + pCurvatures * CurvatureWeight.value;
+					return Point< Real , 2 >( (Real)1. , (Real)1. ) + pCurvatures * static_cast< Real >( CurvatureWeight.value );
 				};
 
-			Real s = (Real)(1./sqrt(originalArea) );
+			Real scl = static_cast< Real >( 1./sqrt(originalArea) );
 			CurvatureMetric::SetCurvatureMetric
 			(
 				mesh ,
-				[&]( unsigned int idx ){ return Point< Real , 3 >( vertices[idx].template get< VERTEX_POSITION >() ) * s; } ,
+//				[&vertices,scl]( unsigned int idx ){ return Point< Real , 3 >( vertices[idx].template get< VERTEX_POSITION >() ) * scl; } ,
+				[&]( unsigned int idx ){ return Point< Real , 3 >( vertices[idx].template get< VERTEX_POSITION >() ) * scl; } ,
 				[&]( unsigned int idx ){ return Point< Real , 3 >( curvatureNormals[idx] ); } ,
 				PrincipalCurvatureFunctor
 			);

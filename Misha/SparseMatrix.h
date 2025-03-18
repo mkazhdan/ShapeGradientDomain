@@ -46,7 +46,7 @@ namespace MishaK
 		template< class T , class IndexType > class SparseMatrix : public SparseMatrixInterface::SparseMatrixInterface< T , ConstPointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) >
 		{
 			template< class T2 , class IndexType2 > friend class SparseMatrix;
-			Pointer( Pointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) ) _entries;
+			Pointer( Pointer( MishaK::SparseMatrixInterface::MatrixEntry< T , IndexType > ) ) _entries;
 		public:
 			static void Swap( SparseMatrix& M1 , SparseMatrix& M2 )
 			{
@@ -54,8 +54,8 @@ namespace MishaK
 				std::swap( M1.rowSizes , M2.rowSizes );
 				std::swap( M1._entries , M2._entries );
 			}
-			typedef SparseMatrixInterface::SparseMatrixInterface< T , ConstPointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) > Interface;
-			typedef ConstPointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) RowIterator;
+			typedef MishaK::SparseMatrixInterface::SparseMatrixInterface< T , ConstPointer( MishaK::SparseMatrixInterface::MatrixEntry< T , IndexType > ) > Interface;
+			typedef ConstPointer( MishaK::SparseMatrixInterface::MatrixEntry< T , IndexType > ) RowIterator;
 
 			size_t rows;
 			Pointer( size_t ) rowSizes;
@@ -81,8 +81,8 @@ namespace MishaK
 			template< class T2 , class IndexType2 >
 			SparseMatrix< T , IndexType >& copy( const SparseMatrix< T2 , IndexType2 >& M );
 
-			inline ConstPointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) begin( size_t row ) const { return _entries[row]; }
-			inline ConstPointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) end  ( size_t row ) const { return _entries[row] + rowSizes[row]; }
+			inline ConstPointer( MishaK::SparseMatrixInterface::MatrixEntry< T , IndexType > ) begin( size_t row ) const { return _entries[row]; }
+			inline ConstPointer( MishaK::SparseMatrixInterface::MatrixEntry< T , IndexType > ) end  ( size_t row ) const { return _entries[row] + rowSizes[row]; }
 			inline size_t Rows                              ( void )       const { return rows; }
 			inline size_t RowSize                           ( size_t idx ) const { return rowSizes[idx]; }
 
@@ -92,8 +92,8 @@ namespace MishaK
 			void ResetRowSize( size_t row , size_t count );
 			void CollapseRow( int row );
 			void CollapseRows( void );
-			inline      Pointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) operator[] ( size_t idx )       { return _entries[idx]; }
-			inline ConstPointer( SparseMatrixInterface::MatrixEntry< T , IndexType > ) operator[] ( size_t idx ) const { return _entries[idx]; }
+			inline      Pointer( MishaK::SparseMatrixInterface::MatrixEntry< T , IndexType > ) operator[] ( size_t idx )       { return _entries[idx]; }
+			inline ConstPointer( MishaK::SparseMatrixInterface::MatrixEntry< T , IndexType > ) operator[] ( size_t idx ) const { return _entries[idx]; }
 
 			double SquareNorm( void ) const { return SquareNorm( []( T t ){ return t*t; } ); }
 			template< typename SquareNormFunctor > double SquareNorm( SquareNormFunctor F=[]( T t ){ return t*t; } ) const;
@@ -136,11 +136,11 @@ namespace MishaK
 		bool TransposeMultiply( const SparseMatrix< T1 , IndexType >& At , const SparseMatrix< T2 , IndexType >& B , SparseMatrix< T3 , IndexType >& out , size_t outRows , T1 (*TransposeFunction)( const T1& )=NULL );
 #if MATRIX_MULTIPLY_INTERFACE
 		template< class A_T , class A_const_iterator , class B_T , class B_const_iterator , class Out_T , class Out_IndexType >
-		bool Multiply( const SparseMatrixInterface::SparseMatrixInterface< A_T , A_const_iterator >& A , const SparseMatrixInterface::SparseMatrixInterface< B_T , B_const_iterator >& B , SparseMatrix< Out_T , Out_IndexType >& out , unsigned int threads = 1 );
+		bool Multiply( const MishaK::SparseMatrixInterface::SparseMatrixInterface< A_T , A_const_iterator >& A , const MishaK::SparseMatrixInterface::SparseMatrixInterface< B_T , B_const_iterator >& B , SparseMatrix< Out_T , Out_IndexType >& out , unsigned int threads = 1 );
 		template< class T , class In_const_iterator , class Out_IndexType >
-		bool Transpose( const SparseMatrixInterface::SparseMatrixInterface< T , In_const_iterator >& At , SparseMatrix< T , Out_IndexType >& A ,                  T (*TransposeFunction)( const T& )=NULL );
+		bool Transpose( const MishaK::SparseMatrixInterface::SparseMatrixInterface< T , In_const_iterator >& At , SparseMatrix< T , Out_IndexType >& A ,                  T (*TransposeFunction)( const T& )=NULL );
 		template< class T , class In_const_iterator , class Out_IndexType >
-		bool Transpose( const SparseMatrixInterface::SparseMatrixInterface< T , In_const_iterator >& At , SparseMatrix< T , Out_IndexType >& A , size_t outRows , T (*TransposeFunction)( const T& )=NULL );
+		bool Transpose( const MishaK::SparseMatrixInterface::SparseMatrixInterface< T , In_const_iterator >& At , SparseMatrix< T , Out_IndexType >& A , size_t outRows , T (*TransposeFunction)( const T& )=NULL );
 #else
 		template< class T1 , class T2 , class T3 , class IndexType >
 		bool Multiply(const SparseMatrix< T1, IndexType > &A, const SparseMatrix< T2, IndexType > &B, SparseMatrix< T3, IndexType > &out , unsigned int threads = 1);
@@ -165,14 +165,14 @@ namespace MishaK
 			size_t _rows , _row;
 			int _offset;
 			ConstPointer( T ) _values;
-			SparseMatrixInterface::MatrixEntry< size_t , T > _entry;
+			MishaK::SparseMatrixInterface::MatrixEntry< size_t , T > _entry;
 		public:
 			bool operator !=( const BandedMatrixIterator& i ) const { return i._row!=_row || i._offset!=_offset; }
-			const SparseMatrixInterface::MatrixEntry< T , size_t >& operator -> ( void ) const { return _entry; }
+			const MishaK::SparseMatrixInterface::MatrixEntry< T , size_t >& operator -> ( void ) const { return _entry; }
 			BandedMatrixIterator& operator ++ ( void )
 			{
 				_offset++;
-				if( _offset<=Radius ) _entry = SparseMatrixInterface::MatrixEntry< T , size_t >( ( _rows + _row + _offset ) % _rows , _values[ Radius+_offset ] );
+				if( _offset<=Radius ) _entry = MishaK::SparseMatrixInterface::MatrixEntry< T , size_t >( ( _rows + _row + _offset ) % _rows , _values[ Radius+_offset ] );
 				return *this;
 			}
 			BandedMatrixIterator( size_t rows , size_t row , ConstPointer( T ) values ){ _rows = rows , _row = row , _values = values, _offset = -(int)Radius; }
