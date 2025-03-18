@@ -150,31 +150,31 @@ namespace MishaK
 #endif // VERBOSE_MESSAGING
 }
 #ifdef VERBOSE_MESSAGING
-#ifndef WARN
-#define WARN( ... ) MishaK::Warn( __FILE__ , __LINE__ , __FUNCTION__ , __VA_ARGS__ )
-#endif // WARN
-#ifndef WARN_ONCE
-#define WARN_ONCE( ... ) { static bool firstTime = true ; if( firstTime ) MishaK::Warn( __FILE__ , __LINE__ , __FUNCTION__ , __VA_ARGS__ ) ; firstTime = false; }
-#endif // WARN_ONCE
-#ifndef THROW
-#define THROW( ... ) MishaK::Throw( __FILE__ , __LINE__ , __FUNCTION__ , __VA_ARGS__ )
-#endif // THROW
-#ifndef ERROR_OUT
-#define ERROR_OUT( ... ) MishaK::ErrorOut( __FILE__ , __LINE__ , __FUNCTION__ , __VA_ARGS__ )
-#endif // ERROR_OUT
+#ifndef MK_WARN
+#define MK_WARN( ... ) MishaK::Warn( __FILE__ , __LINE__ , __FUNCTION__ , __VA_ARGS__ )
+#endif // MK_WARN
+#ifndef MK_WARN_ONCE
+#define MK_WARN_ONCE( ... ) { static bool firstTime = true ; if( firstTime ) MishaK::Warn( __FILE__ , __LINE__ , __FUNCTION__ , __VA_ARGS__ ) ; firstTime = false; }
+#endif // MK_WARN_ONCE
+#ifndef MK_THROW
+#define MK_THROW( ... ) MishaK::Throw( __FILE__ , __LINE__ , __FUNCTION__ , __VA_ARGS__ )
+#endif // MK_THROW
+#ifndef MK_ERROR_OUT
+#define MK_ERROR_OUT( ... ) MishaK::ErrorOut( __FILE__ , __LINE__ , __FUNCTION__ , __VA_ARGS__ )
+#endif // MK_ERROR_OUT
 #else // !VERBOSE_MESSAGING
-#ifndef WARN
-#define WARN( ... ) MishaK::Warn( __FUNCTION__ , __VA_ARGS__ )
-#endif // WARN
-#ifndef WARN_ONCE
-#define WARN_ONCE( ... ) { static bool firstTime = true ; if( firstTime ) MishaK::Warn( __FUNCTION__ , __VA_ARGS__ ) ; firstTime = false; }
-#endif // WARN_ONCE
-#ifndef THROW
-#define THROW( ... ) MishaK::Throw( __FUNCTION__ , __VA_ARGS__ )
-#endif // THROW
-#ifndef ERROR_OUT
-#define ERROR_OUT( ... ) MishaK::ErrorOut( __FUNCTION__ , __VA_ARGS__ )
-#endif // ERROR_OUT
+#ifndef MK_WARN
+#define MK_WARN( ... ) MishaK::Warn( __FUNCTION__ , __VA_ARGS__ )
+#endif // MK_WARN
+#ifndef MK_WARN_ONCE
+#define MK_WARN_ONCE( ... ) { static bool firstTime = true ; if( firstTime ) MishaK::Warn( __FUNCTION__ , __VA_ARGS__ ) ; firstTime = false; }
+#endif // MK_WARN_ONCE
+#ifndef MK_THROW
+#define MK_THROW( ... ) MishaK::Throw( __FUNCTION__ , __VA_ARGS__ )
+#endif // MK_THROW
+#ifndef MK_ERROR_OUT
+#define MK_ERROR_OUT( ... ) MishaK::ErrorOut( __FUNCTION__ , __VA_ARGS__ )
+#endif // MK_ERROR_OUT
 #endif // VERBOSE_MESSAGING
 
 #endif // EXCEPTIONS_INCLUDED

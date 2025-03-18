@@ -38,7 +38,7 @@ namespace PLY
 	template<> inline int Type<             double >( void ){ return PLY_DOUBLE    ; }
 	template< class Real > inline int Type( void )
 	{
-		ERROR_OUT( "Unrecognized type" );
+		MK_ERROR_OUT( "Unrecognized type" );
 		return -1;
 	}
 
@@ -82,7 +82,7 @@ namespace PLY
 		float version;
 
 		PlyFile::PlyFile *ply = PlyFile::PlyFile::Read( fileName , elist , file_type , version );
-		if( !ply ) THROW( "could not read ply file: " , fileName );
+		if( !ply ) MK_THROW( "could not read ply file: " , fileName );
 
 		for( int i=0 ; i<(int)elist.size() ; i++ ) if( elist[i]=="vertex" ) for( int j=0 ; j<propertyNum ; j++ ) if( readFlags ) readFlags[j] = ply->get_property( elist[i] , &properties[j] )!=0;
 
@@ -97,7 +97,7 @@ namespace PLY
 		std::vector< PlyFile::PlyProperty > properties;
 
 		PlyFile::PlyFile *ply = PlyFile::PlyFile::Read( fileName , elist , file_type , version );
-		if( !ply ) THROW( "could not read ply file: " , fileName );
+		if( !ply ) MK_THROW( "could not read ply file: " , fileName );
 
 		for( int i=0 ; i<elist.size() ; i++ )
 		{
@@ -108,7 +108,7 @@ namespace PLY
 			else if( !plist.size() )
 			{
 				delete ply;
-				THROW( "could not get element description for: " , elem_name );
+				MK_THROW( "could not get element description for: " , elem_name );
 			}
 			if( elem_name=="vertex" ) for( unsigned int i=0 ; i<plist.size() ; i++ ) properties.push_back( *plist[i] );
 		}
@@ -136,7 +136,7 @@ namespace PLY
 		std::vector< std::string > elist;
 
 		PlyFile::PlyFile *ply = PlyFile::PlyFile::Read( fileName , elist , file_type , version );
-		if( !ply ) THROW( "could not read ply file: " , fileName );
+		if( !ply ) MK_THROW( "could not read ply file: " , fileName );
 
 		if( comments )
 		{
@@ -153,7 +153,7 @@ namespace PLY
 			else if( !plist.size() )
 			{
 				delete ply;
-				THROW( "could not get element description for: " , elem_name );
+				MK_THROW( "could not get element description for: " , elem_name );
 			}
 #if 1
 			if( elem_name=="vertex" )
@@ -301,7 +301,7 @@ namespace PLY
 		triangles.resize( polygons.size() );
 		for( unsigned int i=0 ; i<polygons.size() ; i++ )
 		{
-			if( polygons[i].size()!=3 ) ERROR_OUT( "Polygon is not a triangle: " , polygons[i].size() , " != " , 3 );
+			if( polygons[i].size()!=3 ) MK_ERROR_OUT( "Polygon is not a triangle: " , polygons[i].size() , " != " , 3 );
 			for( int j=0 ; j<3 ; j++ ) triangles[i][j] = polygons[i][j];
 		}
 		return file_type;
@@ -322,7 +322,7 @@ namespace PLY
 		int file_type;
 		float version;
 		PlyFile::PlyFile *ply = PlyFile::PlyFile::Read( fileName , elist , file_type , version );
-		if( !ply ) THROW( "could not read ply file: " , fileName );
+		if( !ply ) MK_THROW( "could not read ply file: " , fileName );
 
 		if( comments )
 		{
@@ -339,7 +339,7 @@ namespace PLY
 			else if( !plist.size() )
 			{
 				delete ply;
-				THROW( "could not get element description for: " , elem_name );
+				MK_THROW( "could not get element description for: " , elem_name );
 			}
 			if( elem_name=="vertex" )
 			{
@@ -404,7 +404,7 @@ namespace PLY
 		float version;
 
 		PlyFile::PlyFile *ply = PlyFile::PlyFile::Read( fileName , elist , file_type , version );
-		if( !ply ) THROW( "could not read ply file: " , fileName );
+		if( !ply ) MK_THROW( "could not read ply file: " , fileName );
 
 		if( comments )
 		{
@@ -420,7 +420,7 @@ namespace PLY
 			if( !plist.size() )
 			{
 				delete ply;
-				THROW( "Failed to read property list: " , elem_name );
+				MK_THROW( "Failed to read property list: " , elem_name );
 			}		
 			if( elem_name=="vertex" )
 			{
@@ -476,7 +476,7 @@ namespace PLY
 		std::vector< std::vector< Index > > polygons;
 		int file_type = ReadPolygons( fileName , vFactory , vertices , polygons , vertexPropertiesFlag , comments );
 
-		for( int i=0 ; i<polygons.size() ; i++ ) if( polygons[i].size()!=4 ) ERROR_OUT( "Expected polygon with four vertices" );
+		for( int i=0 ; i<polygons.size() ; i++ ) if( polygons[i].size()!=4 ) MK_ERROR_OUT( "Expected polygon with four vertices" );
 		tetrahedra.resize( polygons.size() );
 		for( unsigned int i=0 ; i<polygons.size() ; i++ ) for( int j=0 ; j<4 ; j++ ) tetrahedra[i][j] = polygons[i][j];
 		return file_type;
@@ -496,7 +496,7 @@ namespace PLY
 		std::vector< std::vector< Index > > polygons;
 		int file_type = ReadPolygons( fileName , vFactory , vertices , polygons , vertexPropertiesFlag , comments );
 
-		for( int i=0 ; i<polygons.size() ; i++ ) if( polygons[i].size()!=K+1 ) THROW( "Expected polygon with " , K+1 , " vertices" );
+		for( int i=0 ; i<polygons.size() ; i++ ) if( polygons[i].size()!=K+1 ) MK_THROW( "Expected polygon with " , K+1 , " vertices" );
 		simplexIndices.resize( polygons.size() );
 		for( unsigned int i=0 ; i<polygons.size() ; i++ ) for( int j=0 ; j<=K ; j++ ) simplexIndices[i][j] = polygons[i][j];
 		return file_type;
@@ -542,7 +542,7 @@ namespace PLY
 		std::vector< std::string > elist = { std::string( "vertex" ) , std::string( "edge" ) , std::string( "face" ) };
 
 		PlyFile::PlyFile *ply = PlyFile::PlyFile::Write( fileName , elist , file_type , version );
-		if( !ply ) THROW( "could not write ply file: " , fileName );
+		if( !ply ) MK_THROW( "could not write ply file: " , fileName );
 
 		//
 		// describe vertex, edge, and face properties
@@ -627,7 +627,7 @@ namespace PLY
 		float version;
 		std::vector< std::string > elem_names = { std::string( "vertex" ) };
 		PlyFile::PlyFile *ply = PlyFile::PlyFile::Write( fileName , elem_names , file_type , version );
-		if( !ply ) THROW( "could not write ply file: " , fileName );
+		if( !ply ) MK_THROW( "could not write ply file: " , fileName );
 
 		//
 		// describe vertex and face properties
@@ -686,7 +686,7 @@ namespace PLY
 		float version;
 		std::vector< std::string > elem_names = { std::string( "vertex" ) , std::string( "face" ) };
 		PlyFile::PlyFile *ply = PlyFile::PlyFile::Write( fileName , elem_names , file_type , version );
-		if( !ply ) THROW( "could not write ply file: " , fileName );
+		if( !ply ) MK_THROW( "could not write ply file: " , fileName );
 
 		//
 		// describe vertex and face properties
@@ -758,7 +758,7 @@ namespace PLY
 		float version;
 		std::vector< std::string > elem_names = { std::string( "vertex" ) , std::string( "face" ) };
 		PlyFile::PlyFile *ply = PlyFile::PlyFile::Write( fileName , elem_names , file_type , version );
-		if( !ply ) THROW( "could not write ply file: " , fileName );
+		if( !ply ) MK_THROW( "could not write ply file: " , fileName );
 
 		//
 		// describe vertex and face properties
@@ -810,7 +810,7 @@ namespace PLY
 			float version;
 			std::vector< std::string > elem_names = { std::string( "vertex" ) };
 			PlyFile::PlyFile *ply = PlyFile::PlyFile::Write( fileName , elem_names , file_type , version );
-			if( !ply ) THROW( "could not write ply file: " , fileName );
+			if( !ply ) MK_THROW( "could not write ply file: " , fileName );
 
 			//
 			// describe vertex and face properties

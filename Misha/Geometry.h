@@ -260,12 +260,12 @@ namespace MishaK
 			{
 				if( !_dim ){ _resize( p._dim ) ; for( unsigned int i=0 ; i<_dim ; i++ ) _coords[i] = p._coords[i]; }
 				else if( _dim==p._dim ) for( unsigned int i=0 ; i<_dim ; i++ ) _coords[i] += p._coords[i];
-				else ERROR_OUT( "Dimensions don't match: " , _dim , " != " , p._dim );
+				else MK_ERROR_OUT( "Dimensions don't match: " , _dim , " != " , p._dim );
 			}
 			void Scale( Real s ){ for( unsigned int i=0 ; i<_dim ; i++ ) (*this)[i] *= s; }
 			Real InnerProduct( const Point &p ) const
 			{
-				if( _dim!=p._dim ) ERROR_OUT( "Dimensions differ: " , _dim , " != " , p._dim );
+				if( _dim!=p._dim ) MK_ERROR_OUT( "Dimensions differ: " , _dim , " != " , p._dim );
 
 				Real dot={};
 #if 0
@@ -294,7 +294,7 @@ namespace MishaK
 
 			Point &operator = ( const Point &p )
 			{
-				if( _dim!=p._dim && _dim!=0 ) ERROR_OUT( "Dimensions don't match: " , _dim , " != " , p._dim );
+				if( _dim!=p._dim && _dim!=0 ) MK_ERROR_OUT( "Dimensions don't match: " , _dim , " != " , p._dim );
 
 				if( !_dim ) _resize( p._dim );
 				for( unsigned int d=0 ; d<_dim ; d++ ) _coords[d] = p._coords[d];
@@ -342,7 +342,7 @@ namespace MishaK
 			{
 				if     ( sz==0   ) memset( coords , 0 , sizeof(coords) );
 				else if( sz==Dim ) memcpy( coords , values , sizeof(coords) );
-				else ERROR_OUT( "Should never be called" );
+				else MK_ERROR_OUT( "Should never be called" );
 			}
 
 		public:
@@ -425,13 +425,13 @@ namespace MishaK
 			{
 				if( !_dim ){ _resize( p._dim ) ; for( unsigned int i=0 ; i<_dim ; i++ ) _coords[i] = p._coords[i]; }
 				else if( _dim==p._dim ) for( unsigned int i=0 ; i<_dim ; i++ ) _coords[i] += p._coords[i];
-				else ERROR_OUT( "Dimensions don't match: " , _dim , " != " , p._dim );
+				else MK_ERROR_OUT( "Dimensions don't match: " , _dim , " != " , p._dim );
 			}
 			void Scale( Real s ){ for( unsigned int i=0 ; i<_dim ; i++ ) (*this)[i] *= s; }
 			Real InnerProduct( const Point &p ) const
 			{
 				Real dot;
-				if( _dim!=p._dim ) ERROR_OUT( "Dimensions differ: " , _dim , " != " , p._dim );
+				if( _dim!=p._dim ) MK_ERROR_OUT( "Dimensions differ: " , _dim , " != " , p._dim );
 				for( size_t d=0 ; d<_dim ; d++ ) dot += _coords[d] * p._coords[d];
 				return dot;
 			}
@@ -446,7 +446,7 @@ namespace MishaK
 			{
 				if( !_dim ){ _resize( p._dim ) ; memcpy( _coords , p._coords , sizeof(Real)*_dim ); }
 				else if( _dim==p._dim ) memcpy( _coords , p._coords , sizeof(Real)*_dim );
-				else ERROR_OUT( "Dimensions don't match: " , _dim , " != " , p._dim );
+				else MK_ERROR_OUT( "Dimensions don't match: " , _dim , " != " , p._dim );
 				return *this;
 			}
 
@@ -563,8 +563,8 @@ namespace MishaK
 			template< int C , int R >
 			Matrix( const Matrix< Real , C , R > &m ){}
 
-			Real& operator () ( int c , int r ) { ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; Real v=0 ; return v; }
-			const Real& operator () ( int c , int r ) const { ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; Real v=0 ; return v; }
+			Real& operator () ( int c , int r ) { MK_ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; Real v=0 ; return v; }
+			const Real& operator () ( int c , int r ) const { MK_ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; Real v=0 ; return v; }
 
 			template< int Cols1 >
 			Matrix< Real , Cols1 , Rows > operator * ( const Matrix< Real , Cols1 , Cols >& m ) const { return Matrix< Real , Cols1 , Rows >(); }
@@ -600,8 +600,8 @@ namespace MishaK
 			template< int C , int R >
 			Matrix( const Matrix< Real , C , R > &m ){}
 
-			Real& operator () ( int c , int r ) { ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; return (Real&)*(Real*)NULL; }
-			const Real& operator () ( int c , int r ) const { ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; return (Real&)*(Real*)NULL; }
+			Real& operator () ( int c , int r ) { MK_ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; return (Real&)*(Real*)NULL; }
+			const Real& operator () ( int c , int r ) const { MK_ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; return (Real&)*(Real*)NULL; }
 
 			template< int Cols1 >
 			Matrix< Real , Cols1 , Rows > operator * ( const Matrix< Real , Cols1 , Cols >& m ) const { return Matrix< Real , Cols1 , Rows >(); }
@@ -734,8 +734,8 @@ namespace MishaK
 			template< int C , int R >
 			Matrix( const Matrix< Real , C , R > &m ){}
 
-			Real& operator () ( int c , int r ) { ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; Real v=0 ; return v; }
-			const Real& operator () ( int c , int r ) const { ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; Real v=0 ; return v; }
+			Real& operator () ( int c , int r ) { MK_ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; Real v=0 ; return v; }
+			const Real& operator () ( int c , int r ) const { MK_ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; Real v=0 ; return v; }
 
 			template< int Cols1 >
 			Matrix< Real , Cols1 , Rows > operator * ( const Matrix< Real , Cols1 , Cols >& m ) const { return Matrix< Real , Cols1 , Rows >(); }
@@ -776,8 +776,8 @@ namespace MishaK
 			template< int C , int R >
 			Matrix( const Matrix< Real , C , R > &m ){}
 
-			Real& operator () ( int c , int r ) { ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; Real v=0 ; return v; }
-			const Real& operator () ( int c , int r ) const { ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; Real v=0 ; return v; }
+			Real& operator () ( int c , int r ) { MK_ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; Real v=0 ; return v; }
+			const Real& operator () ( int c , int r ) const { MK_ERROR_OUT( "Should not be accessing the entries of this matrix" ) ; Real v=0 ; return v; }
 
 			template< int Cols1 >
 			Matrix< Real , Cols1 , Rows > operator * ( const Matrix< Real , Cols1 , Cols >& m ) const { return Matrix< Real , Cols1 , Rows >(); }
@@ -846,8 +846,8 @@ namespace MishaK
 			void SetIdentity( void ){;}
 			////////////////////////////////
 
-			Real &operator () ( int c , int r ){ ERROR_OUT( "Should not be accessing the entries of a 0x0 matrix" ) ; Real v ; return v; }
-			const Real &operator () ( int c , int r ) const { ERROR_OUT( "Should not be accessing the entries of a 0x0 matrix" ) ; Real v ; return v; }
+			Real &operator () ( int c , int r ){ MK_ERROR_OUT( "Should not be accessing the entries of a 0x0 matrix" ) ; Real v ; return v; }
+			const Real &operator () ( int c , int r ) const { MK_ERROR_OUT( "Should not be accessing the entries of a 0x0 matrix" ) ; Real v ; return v; }
 			Real determinant( void ) const { return 0; }
 			Real trace( void ) const { return 0; }
 			SquareMatrix transpose( void ) const { return Matrix< Real , Dim , Dim >::transpose(); }
@@ -1044,7 +1044,7 @@ namespace MishaK
 				}
 				bool success;
 				Minv = M.inverse( success );
-				if( !success ){ THROW( "Could not inverse matrix" ); }
+				if( !success ){ MK_THROW( "Could not inverse matrix" ); }
 
 #if 1
 				// [WARNING] Apparently "offset" could have been initialized to something awful so that multiplication by zero is still awful
@@ -1561,7 +1561,7 @@ namespace MishaK
 			void _init( unsigned int k )
 			{
 				if( !k ) for( unsigned int k=0 ; k<=K ; k++ ) idx[k] = k;
-				else ERROR_OUT( "Should never be called" );
+				else MK_ERROR_OUT( "Should never be called" );
 			}
 			template< class ... Ints > void _init( unsigned int k , Index v , Ints ... values )
 			{

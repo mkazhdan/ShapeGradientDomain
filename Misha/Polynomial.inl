@@ -287,7 +287,7 @@ typename std::enable_if< (_D==Degree ) >::type Polynomial< Dim , Degree , Real >
 		degrees[0] = _D;
 		Polynomial< Dim-1 , Degree-_D , Real >::SetDegrees( coefficientIndex , degrees+1 );
 	}
-	else ERROR_OUT( "coefficient index too big" );
+	else MK_ERROR_OUT( "coefficient index too big" );
 }
 
 template< unsigned int Dim , unsigned int Degree , typename Real >
@@ -316,14 +316,14 @@ Polynomial< Dim , Degree , Real > &Polynomial< Dim , Degree , Real >::operator= 
 template< unsigned int Dim , unsigned int Degree , typename Real >
 const Real &Polynomial< Dim , Degree , Real >::_coefficient( const unsigned int indices[] , unsigned int maxDegree ) const
 {
-	if( indices[0]>maxDegree ) ERROR_OUT( "degree out of bounds: " , indices[0] , " > " , maxDegree );
+	if( indices[0]>maxDegree ) MK_ERROR_OUT( "degree out of bounds: " , indices[0] , " > " , maxDegree );
 	return _polynomials[ indices[0] ]._coefficient( indices+1 , maxDegree-indices[0] );
 }
 
 template< unsigned int Dim , unsigned int Degree , typename Real >
 Real& Polynomial< Dim , Degree , Real >::_coefficient( const unsigned int indices[] , unsigned int maxDegree )
 {
-	if( indices[0]>maxDegree ) ERROR_OUT( "degree out of bounds: " , indices[0] , " > " , maxDegree );
+	if( indices[0]>maxDegree ) MK_ERROR_OUT( "degree out of bounds: " , indices[0] , " > " , maxDegree );
 	return _polynomials[ indices[0] ]._coefficient( indices+1 , maxDegree-indices[0] );
 }
 
@@ -645,7 +645,7 @@ Polynomial< Dim , Max< Degree1 , Degree2 >::Value , Real > operator - ( const Po
 template< unsigned int Degree , typename Real >
 unsigned int Roots( const Polynomial< 1 , Degree , Real > &p , Real *r , double eps )
 {
-	ERROR_OUT( "Root functionality not supported for polynomial of degree = %d" , Degree );
+	MK_ERROR_OUT( "Root functionality not supported for polynomial of degree = %d" , Degree );
 	return 0;
 }
 

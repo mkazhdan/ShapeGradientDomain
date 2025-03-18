@@ -135,7 +135,7 @@ namespace MishaK
 
 			if( preAnalyzed ) solver.factorize( mass + stiffness );
 			else              solver.compute  ( mass + stiffness );
-			if( solver.info()!=Eigen::Success ) ERROR_OUT( "Failed to factorize matrix" );
+			if( solver.info()!=Eigen::Success ) MK_ERROR_OUT( "Failed to factorize matrix" );
 
 			std::vector< T > out( mesh.vCount() );
 			_Solve< 0 >( solver , mass , stiffness , std::forward< LowFrequencyVertexFunctor >( Low ) , std::forward< HighFrequencyVertexFunctor >( High ) , out );
@@ -168,7 +168,7 @@ namespace MishaK
 
 			if( preAnalyzed ) solver.factorize( mass + divergence * d );
 			else              solver.compute  ( mass + divergence * d );
-			if( solver.info()!=Eigen::Success ) ERROR_OUT( "Failed to factorize matrix" );
+			if( solver.info()!=Eigen::Success ) MK_ERROR_OUT( "Failed to factorize matrix" );
 
 			std::vector< T > out( mesh.vCount() );
 			_Solve< 0 >( solver , mass , divergence , std::forward< LowFrequencyVertexFunctor >( Low ) , std::forward< HighFrequencyEdgeFunctor >( High ) , out );

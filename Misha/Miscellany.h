@@ -219,7 +219,7 @@ namespace MishaK
 				{
 #if _WIN32 || _WIN64
 					FILE *fp;
-					if( fopen_s( &fp , outputFile , "a" ) ) ERROR_OUT( "Failed to open file for appending: " , outputFile );
+					if( fopen_s( &fp , outputFile , "a" ) ) MK_ERROR_OUT( "Failed to open file for appending: " , outputFile );
 #else // !_WIN32 && !_WIN64
 					FILE *fp = fopen( outputFile , "a" );
 #endif // _WIN32 || _WIN64
@@ -243,7 +243,7 @@ namespace MishaK
 				{
 #if _WIN32 || _WIN64
 					FILE *fp;
-					if( fopen_s( &fp , outputFile , "a" ) ) ERROR_OUT( "Failed to open file for appending: " , outputFile );
+					if( fopen_s( &fp , outputFile , "a" ) ) MK_ERROR_OUT( "Failed to open file for appending: " , outputFile );
 #else // !_WIN32 && !_WIN64
 					FILE *fp = fopen( outputFile , "a" );
 #endif // _WIN32 || _WIN64

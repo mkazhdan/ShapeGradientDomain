@@ -68,7 +68,7 @@ namespace MishaK
 			else if constexpr( sizeof(Value)==8 ) return SetAtomic64_( &value , newValue );
 			else
 			{
-				WARN_ONCE( "should not use this function: " , typeid(Value).name() , " , " , sizeof(Value) );
+				MK_WARN_ONCE( "should not use this function: " , typeid(Value).name() , " , " , sizeof(Value) );
 				static std::mutex setAtomicMutex;
 				std::lock_guard< std::mutex > lock( setAtomicMutex );
 				Value oldValue = *(Value*)&value;
@@ -85,7 +85,7 @@ namespace MishaK
 			else if constexpr( sizeof(Value)==8 ) return SetAtomic64_( &value , newValue , oldValue );
 			else
 			{
-				WARN_ONCE( "should not use this function: " , typeid(Value).name() , " , " , sizeof(Value) );
+				MK_WARN_ONCE( "should not use this function: " , typeid(Value).name() , " , " , sizeof(Value) );
 				static std::mutex setAtomicMutex;
 				std::lock_guard< std::mutex > lock( setAtomicMutex );
 				if( value==oldValue ){ value = newValue ; return true; }
@@ -101,7 +101,7 @@ namespace MishaK
 			else if constexpr( sizeof(Value)==8 ) return AddAtomic64_( &a , b );
 			else
 			{
-				WARN_ONCE( "should not use this function: " , typeid(Value).name() , " , " , sizeof(Value) );
+				MK_WARN_ONCE( "should not use this function: " , typeid(Value).name() , " , " , sizeof(Value) );
 				static std::mutex addAtomicMutex;
 				std::lock_guard< std::mutex > lock( addAtomicMutex );
 				*(Value*)&a += b;
@@ -116,7 +116,7 @@ namespace MishaK
 			else if constexpr( sizeof(Value)==8 ) return ReadAtomic64_( &value );
 			else
 			{
-				WARN_ONCE( "should not use this function: " , typeid(Value).name() , " , " , sizeof(Value) );
+				MK_WARN_ONCE( "should not use this function: " , typeid(Value).name() , " , " , sizeof(Value) );
 				static std::mutex readAtomicMutex;
 				std::lock_guard< std::mutex > lock( readAtomicMutex );
 				return *(Value*)&value;
@@ -131,7 +131,7 @@ namespace MishaK
 				if constexpr( std::is_pod_v< Value > ) AddAtomic( a , b );
 				else
 				{
-					WARN_ONCE( "should not use this function: " , typeid(Value).name() );
+					MK_WARN_ONCE( "should not use this function: " , typeid(Value).name() );
 					static std::mutex addAtomicMutex;
 					std::lock_guard< std::mutex > lock( addAtomicMutex );
 					*(Value*)&a += b;
@@ -143,7 +143,7 @@ namespace MishaK
 				if constexpr( std::is_pod_v< Value > ) return SetAtomic( value , newValue );
 				else
 				{
-					WARN_ONCE( "should not use this function: " , typeid(Value).name() );
+					MK_WARN_ONCE( "should not use this function: " , typeid(Value).name() );
 					static std::mutex setAtomicMutex;
 					std::lock_guard< std::mutex > lock( setAtomicMutex );
 					Value oldValue = *(Value*)&value;
@@ -157,7 +157,7 @@ namespace MishaK
 				if constexpr( std::is_pod_v< Value > ) return SetAtomic( value , newValue , oldValue );
 				else
 				{
-					WARN_ONCE( "should not use this function: " , typeid(Value).name() , " , " , sizeof(Value) );
+					MK_WARN_ONCE( "should not use this function: " , typeid(Value).name() , " , " , sizeof(Value) );
 					static std::mutex setAtomicMutex;
 					std::lock_guard< std::mutex > lock( setAtomicMutex );
 					if( value==oldValue ){ value = newValue ; return true; }
@@ -170,7 +170,7 @@ namespace MishaK
 				if constexpr( std::is_pod_v< Value > ) return ReadAtomic( value );
 				else
 				{
-					WARN_ONCE( "should not use this function: " , typeid(Value).name() , " , " , sizeof(Value) );
+					MK_WARN_ONCE( "should not use this function: " , typeid(Value).name() , " , " , sizeof(Value) );
 					static std::mutex readAtomicMutex;
 					std::lock_guard< std::mutex > lock( readAtomicMutex );
 					return *(Value*)&value;

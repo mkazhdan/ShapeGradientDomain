@@ -210,7 +210,7 @@ int _main( void )
 		}
 
 		if( SignalType( Signal.value )==SignalType::NORMAL ) hasNormals = true;
-		if( SignalType( Signal.value )==SignalType::COLOR && !hasColors ) ERROR_OUT( "No color channel specified" );
+		if( SignalType( Signal.value )==SignalType::COLOR && !hasColors ) MK_ERROR_OUT( "No color channel specified" );
 		delete[] readFlags;
 		if( Verbose.set ) std::cout << "Source Vertices / Triangles: " << vertices.size() << " / " << triangles.size() << std::endl;
 	}
@@ -304,7 +304,7 @@ int _main( void )
 	case SignalType::NORMAL_TO_POSITION:
 	case SignalType::NORMAL  : for( int i=0 ; i<vertices.size() ; i++ ) signal[i] = Point3D< Real >( vertices[i].template get< VERTEX_NORMAL   >() ) ; break;
 	case SignalType::COLOR   : for( int i=0 ; i<vertices.size() ; i++ ) signal[i] = Point3D< Real >( vertices[i].template get< VERTEX_COLOR    >() ) ; break;
-	default: ERROR_OUT( "Unrecognized signal type: " , Signal.value );
+	default: MK_ERROR_OUT( "Unrecognized signal type: " , Signal.value );
 	}
 	// Set the data
 	///////////////
@@ -347,7 +347,7 @@ int _main( void )
 	case SignalType::POSITION: for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get< VERTEX_POSITION >() = Point3D< float >( signal[i] ) ; break;
 	case SignalType::NORMAL  : for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get< VERTEX_NORMAL   >() = Point3D< float >( signal[i] ) ; break;
 	case SignalType::COLOR   : for( int i=0 ; i<vertices.size() ; i++ ) vertices[i].template get< VERTEX_COLOR    >() = Point3D< float >( signal[i] ) ; break;
-	default: ERROR_OUT( "Unrecognized singal type: " , Signal.value );
+	default: MK_ERROR_OUT( "Unrecognized singal type: " , Signal.value );
 	}
 	// Copy the processed signal to the vertices
 	////////////////////////////////////////////

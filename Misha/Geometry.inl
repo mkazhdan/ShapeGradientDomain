@@ -1462,13 +1462,13 @@ void EarTriangulation::GetTriangulation( const std::vector< Point< Real , 2 > > 
 	{
 		if( !earVertices.size() )
 		{
-//			WARN( "Expected an ear vertex: " , PolygonSize() );
+//			MK_WARN( "Expected an ear vertex: " , PolygonSize() );
 			ProcessPolygon( [&]( PolygonVertex *v ){ if( ( v->isEar = IsEar( v ) ) ) earVertices.push_back(v); } );
 			if( !earVertices.size() )
 			{
 //				ProcessPolygon( [&]( PolygonVertex *v ){ std::cout << v->idx << " : " << vertices[ v->idx ] << std::endl; }  );
 //				ProcessPolygon( [&]( PolygonVertex *v ){ poly.push_back( v->idx ); }  );
-//				ERROR_OUT( "Could not find ears" );
+//				MK_ERROR_OUT( "Could not find ears" );
 //std::cout << polys.size() << std::endl;
 				return;
 			}

@@ -148,11 +148,11 @@ inline void CmdLineParse( int argc , char **argv , CmdLineReadable** params )
 			}
 			else
 			{
-				WARN( "Invalid option: " , argv[0] );
+				MK_WARN( "Invalid option: " , argv[0] );
 				for( int i=0 ; params[i]!=NULL ; i++ ) std::cerr << "\t--" << params[i]->name << std::endl;
 			}
 		}
-		else WARN( "Parameter name should be of the form --<name>: " , argv[0] );
+		else MK_WARN( "Parameter name should be of the form --<name>: " , argv[0] );
 		++argv , --argc;
 	}
 }
@@ -172,11 +172,11 @@ inline void CmdLineParse( int argc , char **argv , const std::vector< CmdLineRea
 			}
 			else
 			{
-				WARN( "Invalid option: " , argv[0] );
+				MK_WARN( "Invalid option: " , argv[0] );
 				for( int i=0 ; i<params.size() ; i++ ) std::cerr << "\t--" << params[i]->name << std::endl;
 			}
 		}
-		else WARN( "Parameter name should be of the form --<name>: " , argv[0] );
+		else MK_WARN( "Parameter name should be of the form --<name>: " , argv[0] );
 		++argv , --argc;
 	}
 }
@@ -211,7 +211,7 @@ inline std::vector< std::string > ReadWords( const std::string &fileName )
 {
 	std::ifstream istream;
 	istream.open( fileName );
-	if( !istream ) THROW( "Failed to open file for reading: " , fileName );
+	if( !istream ) MK_THROW( "Failed to open file for reading: " , fileName );
 	std::vector< std::string > words;
 	std::string word;
 	while( istream >> word ) words.push_back( word );
@@ -231,7 +231,7 @@ inline std::vector< std::string > ReadLines( const std::string &fileName )
 {
 	std::ifstream istream;
 	istream.open( fileName );
-	if( !istream ) THROW( "Failed to open file for reading: " , fileName );
+	if( !istream ) MK_THROW( "Failed to open file for reading: " , fileName );
 	std::vector< std::string > lines;
 	std::string line;
 	while( std::getline( istream , line ) ) lines.push_back( line );
