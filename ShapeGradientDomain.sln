@@ -26,6 +26,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misha", "Misha", "{C7B71F77
 		Misha\FEM.inl = Misha\FEM.inl
 		Misha\Geometry.h = Misha\Geometry.h
 		Misha\Geometry.inl = Misha\Geometry.inl
+		Misha\Miscellany.h = Misha\Miscellany.h
 		Misha\MultiThreading.h = Misha\MultiThreading.h
 		Misha\Ply.h = Misha\Ply.h
 		Misha\Ply.inl = Misha\Ply.inl

@@ -404,9 +404,9 @@ SquareMatrix< Real , Dim > SquareMatrix< Real , Dim >::inverse( bool& success ) 
 }
 template< >
 #ifdef NEW_GEOMETRY_CODE
-Matrix< float , 2 , 2 > Matrix< float , 2 , 2 >::inverse( bool& success ) const
+inline Matrix< float , 2 , 2 > Matrix< float , 2 , 2 >::inverse( bool& success ) const
 #else // !NEW_GEOMETRY_CODE
-SquareMatrix< float , 2 > SquareMatrix< float , 2 >::inverse( bool& success ) const
+inline SquareMatrix< float , 2 > SquareMatrix< float , 2 >::inverse( bool& success ) const
 #endif // NEW_GEOMETRY_CODE
 {
 #ifdef NEW_GEOMETRY_CODE
@@ -426,9 +426,9 @@ SquareMatrix< float , 2 > SquareMatrix< float , 2 >::inverse( bool& success ) co
 }
 template< >
 #ifdef NEW_GEOMETRY_CODE
-Matrix< double , 2 , 2 > Matrix< double , 2 , 2 >::inverse( bool& success ) const
+inline Matrix< double , 2 , 2 > Matrix< double , 2 , 2 >::inverse( bool& success ) const
 #else // !NEW_GEOMETRY_CODE
-SquareMatrix< double , 2 > SquareMatrix< double , 2 >::inverse( bool& success ) const
+inline SquareMatrix< double , 2 > SquareMatrix< double , 2 >::inverse( bool& success ) const
 #endif // NEW_GEOMETRY_CODE
 {
 #ifdef NEW_GEOMETRY_CODE
