@@ -26,44 +26,44 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-template<> const unsigned int BasisInfo< BASIS_0_WHITNEY           >::CoefficientsPerElement = 1;
-template<> const unsigned int BasisInfo< BASIS_1_CONFORMING        >::CoefficientsPerElement = 2;
-template<> const unsigned int BasisInfo< BASIS_1_WHITNEY           >::CoefficientsPerElement = 1;
-template<> const unsigned int BasisInfo< BASIS_1_TRIANGLE_CONSTANT >::CoefficientsPerElement = 2;
-template<> const unsigned int BasisInfo< BASIS_2_WHITNEY           >::CoefficientsPerElement = 1;
-template<> const unsigned int BasisInfo< BASIS_2_VERTEX_CONSTANT   >::CoefficientsPerElement = 1;
+template<> inline const unsigned int BasisInfo< BASIS_0_WHITNEY           >::CoefficientsPerElement = 1;
+template<> inline const unsigned int BasisInfo< BASIS_1_CONFORMING        >::CoefficientsPerElement = 2;
+template<> inline const unsigned int BasisInfo< BASIS_1_WHITNEY           >::CoefficientsPerElement = 1;
+template<> inline const unsigned int BasisInfo< BASIS_1_TRIANGLE_CONSTANT >::CoefficientsPerElement = 2;
+template<> inline const unsigned int BasisInfo< BASIS_2_WHITNEY           >::CoefficientsPerElement = 1;
+template<> inline const unsigned int BasisInfo< BASIS_2_VERTEX_CONSTANT   >::CoefficientsPerElement = 1;
 
-template<> const unsigned int BasisInfo< BASIS_0_WHITNEY           >::Coefficients = 3;
-template<> const unsigned int BasisInfo< BASIS_1_CONFORMING        >::Coefficients = 6;
-template<> const unsigned int BasisInfo< BASIS_1_WHITNEY           >::Coefficients = 3;
-template<> const unsigned int BasisInfo< BASIS_1_TRIANGLE_CONSTANT >::Coefficients = 2;
-template<> const unsigned int BasisInfo< BASIS_2_WHITNEY           >::Coefficients = 1;
-template<> const unsigned int BasisInfo< BASIS_2_VERTEX_CONSTANT   >::Coefficients = 3;
+template<> inline const unsigned int BasisInfo< BASIS_0_WHITNEY           >::Coefficients = 3;
+template<> inline const unsigned int BasisInfo< BASIS_1_CONFORMING        >::Coefficients = 6;
+template<> inline const unsigned int BasisInfo< BASIS_1_WHITNEY           >::Coefficients = 3;
+template<> inline const unsigned int BasisInfo< BASIS_1_TRIANGLE_CONSTANT >::Coefficients = 2;
+template<> inline const unsigned int BasisInfo< BASIS_2_WHITNEY           >::Coefficients = 1;
+template<> inline const unsigned int BasisInfo< BASIS_2_VERTEX_CONSTANT   >::Coefficients = 3;
 
-template<> const unsigned int BasisInfo< BASIS_0_WHITNEY           >::Dimension = 0;
-template<> const unsigned int BasisInfo< BASIS_1_CONFORMING        >::Dimension = 1;
-template<> const unsigned int BasisInfo< BASIS_1_WHITNEY           >::Dimension = 1;
-template<> const unsigned int BasisInfo< BASIS_1_TRIANGLE_CONSTANT >::Dimension = 1;
-template<> const unsigned int BasisInfo< BASIS_2_WHITNEY           >::Dimension = 2;
-template<> const unsigned int BasisInfo< BASIS_2_VERTEX_CONSTANT   >::Dimension = 2;
+template<> inline const unsigned int BasisInfo< BASIS_0_WHITNEY           >::Dimension = 0;
+template<> inline const unsigned int BasisInfo< BASIS_1_CONFORMING        >::Dimension = 1;
+template<> inline const unsigned int BasisInfo< BASIS_1_WHITNEY           >::Dimension = 1;
+template<> inline const unsigned int BasisInfo< BASIS_1_TRIANGLE_CONSTANT >::Dimension = 1;
+template<> inline const unsigned int BasisInfo< BASIS_2_WHITNEY           >::Dimension = 2;
+template<> inline const unsigned int BasisInfo< BASIS_2_VERTEX_CONSTANT   >::Dimension = 2;
 
-template<> const bool BasisInfo< BASIS_0_WHITNEY           >::Lumpable = true;
-template<> const bool BasisInfo< BASIS_1_CONFORMING        >::Lumpable = false;
-template<> const bool BasisInfo< BASIS_1_WHITNEY           >::Lumpable = true;
-template<> const bool BasisInfo< BASIS_1_TRIANGLE_CONSTANT >::Lumpable = false;
-template<> const bool BasisInfo< BASIS_2_WHITNEY           >::Lumpable = true;
-template<> const bool BasisInfo< BASIS_2_VERTEX_CONSTANT   >::Lumpable = true;
+template<> inline const bool BasisInfo< BASIS_0_WHITNEY           >::Lumpable = true;
+template<> inline const bool BasisInfo< BASIS_1_CONFORMING        >::Lumpable = false;
+template<> inline const bool BasisInfo< BASIS_1_WHITNEY           >::Lumpable = true;
+template<> inline const bool BasisInfo< BASIS_1_TRIANGLE_CONSTANT >::Lumpable = false;
+template<> inline const bool BasisInfo< BASIS_2_WHITNEY           >::Lumpable = true;
+template<> inline const bool BasisInfo< BASIS_2_VERTEX_CONSTANT   >::Lumpable = true;
 
-template<> const unsigned int BasisInfo< BASIS_0_WHITNEY           >::ElementType = ELEMENT_VERTEX;
-template<> const unsigned int BasisInfo< BASIS_1_CONFORMING        >::ElementType = ELEMENT_VERTEX;
-template<> const unsigned int BasisInfo< BASIS_1_WHITNEY           >::ElementType = ELEMENT_EDGE;
-template<> const unsigned int BasisInfo< BASIS_1_TRIANGLE_CONSTANT >::ElementType = ELEMENT_TRIANGLE;
-template<> const unsigned int BasisInfo< BASIS_2_WHITNEY           >::ElementType = ELEMENT_TRIANGLE;
-template<> const unsigned int BasisInfo< BASIS_2_VERTEX_CONSTANT   >::ElementType = ELEMENT_VERTEX;
+template<> inline const unsigned int BasisInfo< BASIS_0_WHITNEY           >::ElementType = ELEMENT_VERTEX;
+template<> inline const unsigned int BasisInfo< BASIS_1_CONFORMING        >::ElementType = ELEMENT_VERTEX;
+template<> inline const unsigned int BasisInfo< BASIS_1_WHITNEY           >::ElementType = ELEMENT_EDGE;
+template<> inline const unsigned int BasisInfo< BASIS_1_TRIANGLE_CONSTANT >::ElementType = ELEMENT_TRIANGLE;
+template<> inline const unsigned int BasisInfo< BASIS_2_WHITNEY           >::ElementType = ELEMENT_TRIANGLE;
+template<> inline const unsigned int BasisInfo< BASIS_2_VERTEX_CONSTANT   >::ElementType = ELEMENT_VERTEX;
 
-template<> const bool BasisInfo< BASIS_0_WHITNEY           >::Singular = false;
-template<> const bool BasisInfo< BASIS_1_CONFORMING        >::Singular = true;
-template<> const bool BasisInfo< BASIS_1_WHITNEY           >::Singular = false;
-template<> const bool BasisInfo< BASIS_1_TRIANGLE_CONSTANT >::Singular = false;
-template<> const bool BasisInfo< BASIS_2_WHITNEY           >::Singular = false;
-template<> const bool BasisInfo< BASIS_2_VERTEX_CONSTANT   >::Singular = false;
+template<> inline const bool BasisInfo< BASIS_0_WHITNEY           >::Singular = false;
+template<> inline const bool BasisInfo< BASIS_1_CONFORMING        >::Singular = true;
+template<> inline const bool BasisInfo< BASIS_1_WHITNEY           >::Singular = false;
+template<> inline const bool BasisInfo< BASIS_1_TRIANGLE_CONSTANT >::Singular = false;
+template<> inline const bool BasisInfo< BASIS_2_WHITNEY           >::Singular = false;
+template<> inline const bool BasisInfo< BASIS_2_VERTEX_CONSTANT   >::Singular = false;

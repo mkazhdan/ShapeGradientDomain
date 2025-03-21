@@ -283,8 +283,8 @@ int _main( void )
 			CurvatureMetric::SetCurvatureMetric
 			(
 				mesh ,
-//				[&vertices,scl]( unsigned int idx ){ return Point< Real , 3 >( vertices[idx].template get< VERTEX_POSITION >() ) * scl; } ,
-				[&]( unsigned int idx ){ return Point< Real , 3 >( vertices[idx].template get< VERTEX_POSITION >() ) * scl; } ,
+				[&vertices,scl]( unsigned int idx ){ return Point< Real , 3 >( vertices[idx].template get< VERTEX_POSITION >() ) * scl; } ,
+//				[&]( unsigned int idx ){ return Point< Real , 3 >( vertices[idx].template get< VERTEX_POSITION >() ) * scl; } ,
 				[&]( unsigned int idx ){ return Point< Real , 3 >( curvatureNormals[idx] ); } ,
 				PrincipalCurvatureFunctor
 			);
