@@ -50,9 +50,6 @@ DAMAGE.
 #include <Include/GradientDomain.h>
 
 using namespace MishaK;
-using namespace MishaK::CmdLineParser;
-using namespace MishaK::Geometry;
-using namespace MishaK::Array;
 
 enum struct SignalType
 {

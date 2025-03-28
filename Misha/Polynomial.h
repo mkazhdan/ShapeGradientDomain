@@ -38,8 +38,6 @@ namespace MishaK
 {
 	namespace Polynomial
 	{
-		using namespace Geometry;
-
 		/** Helper functionality for computing the minimum of two integers.*/
 		template< unsigned int D1 , unsigned int D2 > struct Min{ static const unsigned int Value = D1<D2 ? D1 : D2; };
 		/** Helper functionality for computing the maximum of two integers.*/
@@ -47,7 +45,7 @@ namespace MishaK
 
 		/** The generic, recursively defined, Polynomial class of total degree Degree. */
 		template< unsigned int Dim , unsigned int Degree , typename Real >
-		class Polynomial : public Algebra::VectorSpace< Real , Polynomial< Dim , Degree , Real > >
+		class Polynomial : public VectorSpace< Real , Polynomial< Dim , Degree , Real > >
 		{
 			template< unsigned int _Dim , unsigned int _Degree , typename _Real > friend class Polynomial;
 			template< unsigned int _Dim , unsigned int Degree1 , unsigned int Degree2 , typename _Real > friend Polynomial< _Dim , Degree1 + Degree2 , _Real > operator * ( const Polynomial< _Dim , Degree1 , _Real > & , const Polynomial< _Dim , Degree2 , _Real > & );
@@ -165,6 +163,9 @@ namespace MishaK
 			Polynomial< _Dim-1 , Degree , Real > operator()( Matrix< Real , _Dim , Dim > A ) const;
 			template< unsigned int _Dim >
 			Polynomial< _Dim-1 , Degree , Real > pullBack( Matrix< Real , _Dim , Dim > A ) const;
+			Polynomial< 1 , Degree , Real > operator()( const Ray< Real , Dim > &ray ) const;
+
+
 
 			/** Integrate the polynomial over a unit cube */
 			Real integrateUnitCube( void ) const;
@@ -173,11 +174,7 @@ namespace MishaK
 			Real integrateUnitRightSimplex( void ) const;
 
 			/** Returns the matrix taking in the ccoefficients of the polynomial and returning the values at the prescribed points */
-#ifdef NEW_GEOMETRY_CODE
 			static Matrix< Real , Polynomial< Dim , Degree , Real >::NumCoefficients , Polynomial< Dim , Degree , Real >::NumCoefficients > EvaluationMatrix( const Point< Real , Dim > positions[NumCoefficients] );
-#else // !NEW_GEOMETRY_CODE
-			static SquareMatrix< Real , Polynomial< Dim , Degree , Real >::NumCoefficients > EvaluationMatrix( const Point< Real , Dim > positions[NumCoefficients] );
-#endif // NEW_GEOMETRY_CODE
 
 			/////////////////////////
 			// VectorSpace methods //
@@ -208,7 +205,7 @@ namespace MishaK
 
 		/** A specialized instance of the Polynomial class in one variable */
 		template< unsigned int Degree , typename Real >
-		class Polynomial< 0 , Degree , Real > : public Algebra::VectorSpace< double , Polynomial< 0 , Degree , Real > >
+		class Polynomial< 0 , Degree , Real > : public VectorSpace< double , Polynomial< 0 , Degree , Real > >
 		{
 			template< unsigned int _Dim , unsigned int _Degree , typename _Real > friend class Polynomial;
 			template< unsigned int Degree1 , unsigned int Degree2 , typename _Real > friend Polynomial< 0 , Degree1 + Degree2 , _Real > operator * ( const Polynomial< 0 , Degree1 , _Real > & , const Polynomial< 0 , Degree2 , _Real > & );
@@ -312,11 +309,7 @@ namespace MishaK
 			Real integrateUnitRightSimplex( void ) const;
 
 			/** Returns the matrix taking in the ccoefficients of the polynomial and returning the values at the prescribed points */
-#ifdef NEW_GEOMETRY_CODE
 			static Matrix< Real , Polynomial< 0 , Degree , Real >::NumCoefficients  , Polynomial< 0 , Degree , Real >::NumCoefficients> EvaluationMatrix( const Point< Real , 0 > positions[NumCoefficients] );
-#else // !NEW_GEOMETRY_CODE
-			static SquareMatrix< Real , Polynomial< 0 , Degree , Real >::NumCoefficients > EvaluationMatrix( const Point< Real , 0 > positions[NumCoefficients] );
-#endif // NEW_GEOMETRY_CODE
 
 			/////////////////////////
 			// VectorSpace methods //

@@ -38,8 +38,6 @@ namespace MishaK
 {
 	namespace GradientDomain
 	{
-		using namespace Geometry;
-
 		template< typename EigenSolver , typename Real , typename VertexFunctor /* = std::function< Point< Real , 3 >( unsigned int ) > */ , typename NormalFunctor /* = std::function< Point< Real , 3 >( unsigned int ) > */ >
 		std::vector< Point< Real , 3 > > FitToNormals( const FEM::RiemannianMesh< Real > &mesh , Real vWeight , Real nWeight , VertexFunctor && V , NormalFunctor && N );
 

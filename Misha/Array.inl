@@ -27,6 +27,7 @@ DAMAGE.
 */
 #define FULL_ARRAY_DEBUG    0	// Note that this is not thread-safe
 
+
 inline bool isfinitef( float fp ){ float f=fp; return ((*(unsigned *)&f)&0x7f800000)!=0x7f800000; }
 
 

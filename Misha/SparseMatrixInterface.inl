@@ -89,7 +89,7 @@ template< class T , class const_iterator > double SparseMatrixInterface< T , con
 	return n;
 }
 template< class T , class const_iterator >
-template< class T2 >
+template< class T2 , class T2Real >
 void SparseMatrixInterface< T , const_iterator >::Multiply( ConstPointer( T2 ) In , Pointer( T2 ) Out , int multiplyFlag ) const
 {
 	ConstPointer( T2 ) in = In;
@@ -103,7 +103,7 @@ void SparseMatrixInterface< T , const_iterator >::Multiply( ConstPointer( T2 ) I
 				ConstPointer( T2 ) _in = in;
 				const_iterator e = end( i );
 #if 1
-				for( const_iterator iter = begin( i ) ; iter!=e ; iter++ ) temp += (T2)( iter->Value * _in[ iter->N ] );
+				for( const_iterator iter = begin( i ) ; iter!=e ; iter++ ) temp += _in[ iter->N ] * static_cast< T2Real >( iter->Value );
 #else
 				for( const_iterator iter = begin( i ) ; iter!=e ; iter++ ) temp += (T2)( _in[ iter->N ] * iter->Value );
 #endif
@@ -114,7 +114,7 @@ void SparseMatrixInterface< T , const_iterator >::Multiply( ConstPointer( T2 ) I
 		);
 }
 template< class T , class const_iterator >
-template< class T2 >
+template< class T2 , class T2Real >
 void SparseMatrixInterface< T , const_iterator >::MultiplyScaled( T scale , ConstPointer( T2 ) In , Pointer( T2 ) Out , int multiplyFlag ) const
 {
 	ConstPointer( T2 ) in = In;
@@ -127,7 +127,7 @@ void SparseMatrixInterface< T , const_iterator >::MultiplyScaled( T scale , Cons
 				memset( &temp , 0 , sizeof(T2) );
 				ConstPointer( T2 ) _in = in;
 				const_iterator e = end( i );
-				for( const_iterator iter = begin( i ) ; iter!=e ; iter++ ) temp += _in[ iter->N ] * iter->Value;
+				for( const_iterator iter = begin( i ) ; iter!=e ; iter++ ) temp += _in[ iter->N ] * static_cast< T2Real >( iter->Value );
 				temp *= scale;
 				if( multiplyFlag & MULTIPLY_NEGATE ) temp = -temp;
 				if( multiplyFlag & MULTIPLY_ADD ) Out[i] += temp;
@@ -288,12 +288,12 @@ template< class SPDOperator , class T > int SolveCG( const SPDOperator& M , Cons
 {
 	eps *= eps;
 	int dim = M.Rows();
-	Pointer( T ) r = Array::AllocPointer< T >( dim );
-	Pointer( T ) d = Array::AllocPointer< T >( dim );
-	Pointer( T ) q = Array::AllocPointer< T >( dim );
-	Pointer( T ) temp = Array::NullPointer< T >( );
+	Pointer( T ) r = AllocPointer< T >( dim );
+	Pointer( T ) d = AllocPointer< T >( dim );
+	Pointer( T ) q = AllocPointer< T >( dim );
+	Pointer( T ) temp = NullPointer< T >( );
 	memset( x , 0 , sizeof(T)* dim );
-	if( solveNormal ) temp = Array::AllocPointer< T >( dim );
+	if( solveNormal ) temp = AllocPointer< T >( dim );
 
 	double delta_new = 0 , delta_0;
 	if( solveNormal )

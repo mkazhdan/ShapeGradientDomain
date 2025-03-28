@@ -1481,17 +1481,17 @@ FEM::CotangentVector< V > FEM::RiemannianMesh< Real , Index >::evaluateCovectorF
 template< class Real , typename Index >
 #ifdef EIGEN_WORLD_VERSION 
 template< unsigned int BasisType , bool UseEigen >
-std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > > FEM::RiemannianMesh< Real , Index >::massMatrix( bool lump , ConstPointer( SquareMatrix< Real , 2 > ) newTensors ) const
+std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > FEM::RiemannianMesh< Real , Index >::massMatrix( bool lump , ConstPointer( SquareMatrix< Real , 2 > ) newTensors ) const
 #else // !EIGEN_WORLD_VERSION 
 template< unsigned int BasisType >
-SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::massMatrix( bool lump , ConstPointer( SquareMatrix< Real , 2 > ) newTensors ) const
+SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::massMatrix( bool lump , ConstPointer( SquareMatrix< Real , 2 > ) newTensors ) const
 #endif // EIGEN_WORLD_VERSION 
 {
 #ifdef EIGEN_WORLD_VERSION 
-	std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > > M;
+	std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > M;
 	std::vector< Eigen::Triplet< Real > > triplets;
 #else // !EIGEN_WORLD_VERSION 
-	SparseMatrix::SparseMatrix< Real , int > M;
+	SparseMatrix< Real , int > M;
 #endif // EIGEN_WORLD_VERSION
 	if( BasisType==BASIS_2_VERTEX_CONSTANT )
 	{
@@ -1525,7 +1525,7 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::ma
 				{
 					Real a = area( (int)i ) / (Real)3.;
 					if( newTensors ) a *= newTensors[i].determinant() / _g[i].determinant() / _g[i].determinant();
-					for( int j=0 ; j<3 ; j++ ) MishaK::Atomic::AddAtomic( M[ _triangles[i][j] ][0].Value , a );
+					for( int j=0 ; j<3 ; j++ ) AddAtomic( M[ _triangles[i][j] ][0].Value , a );
 				}
 			);
 			ThreadPool::ParallelFor( 0 , M.rows , [&]( unsigned int , size_t i ){ M[i][0].Value = (Real)( 1. / M[i][0].Value ); } );
@@ -1536,7 +1536,7 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::ma
 	Point< int , BasisInfo< BasisType >::Coefficients > nonZeroCount;
 	for( int i=0 ; i<BasisInfo< BasisType >::Coefficients ; i++ ) for( int j=0 ; j<BasisInfo< BasisType >::Coefficients ; j++ ) if( mask(i,j) ) nonZeroCount[i]++;
 
-	Pointer( std::atomic< int > ) rowSizes = Array::NullPointer< std::atomic< int > >();
+	Pointer( std::atomic< int > ) rowSizes = NullPointer< std::atomic< int > >();
 #ifdef EIGEN_WORLD_VERSION
 	if constexpr( UseEigen )
 	{
@@ -1643,20 +1643,20 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::ma
 template< class Real , typename Index >
 #ifdef EIGEN_WORLD_VERSION 
 template< unsigned int BasisType , unsigned int Degree , bool UseEigen , typename CotangentVectorFieldFunctor /* = std::function< RightTriangle< Real >::CotangentVectorField< Degree > ( unsigned int tIdx ) > */ >
-std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > > FEM::RiemannianMesh< Real , Index >::derivation( CotangentVectorFieldFunctor v ) const
+std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > FEM::RiemannianMesh< Real , Index >::derivation( CotangentVectorFieldFunctor v ) const
 #else // !EIGEN_WORLD_VERSION 
 template< unsigned int BasisType , unsigned int Degree , typename CotangentVectorFieldFunctor /* = std::function< RightTriangle< Real >::CotangentVectorField< Degree > ( unsigned int tIdx ) > */ >
-SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::derivation( CotangentVectorFieldFunctor v ) const
+SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::derivation( CotangentVectorFieldFunctor v ) const
 #endif // EIGEN_WORLD_VERSION 
 
 {
 	// [WARNING] Hard-coded for Hat basis functions
 
 #ifdef EIGEN_WORLD_VERSION
-	std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > > M;
+	std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > M;
 	std::vector< Eigen::Triplet< Real > > triplets;
 #else // !EIGEN_WORLD_VERSION
-	SparseMatrix::SparseMatrix< Real , int > M;
+	SparseMatrix< Real , int > M;
 #endif // EIGEN_WORLD_VERSION
 
 	if( BasisType!=BASIS_0_WHITNEY ) MK_ERROR_OUT( "Expected Whitney 0-form basis" );
@@ -1670,7 +1670,7 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::de
 	hat[2].coefficient(0,1) = 1;
 	for( unsigned int i=0 ; i<3 ; i++ ) dHat[i] = hat[i].differential();
 
-	Pointer( std::atomic< int > ) rowSizes = Array::NullPointer< std::atomic< int > >();
+	Pointer( std::atomic< int > ) rowSizes = NullPointer< std::atomic< int > >();
 
 #ifdef EIGEN_WORLD_VERSION
 	if constexpr( UseEigen )
@@ -1745,10 +1745,10 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::de
 template< class Real , typename Index >
 #ifdef EIGEN_WORLD_VERSION
 template< unsigned int InBasisType , unsigned int OutBasisType , bool UseEigen >
-std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > > FEM::RiemannianMesh< Real , Index >::dMatrix( void ) const
+std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > FEM::RiemannianMesh< Real , Index >::dMatrix( void ) const
 #else // !EIGEN_WORLD_VERSION
 template< unsigned int InBasisType , unsigned int OutBasisType >
-SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::dMatrix( void ) const
+SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::dMatrix( void ) const
 #endif // EIGEN_WORLD_VERSION
 {
 	TestBasisType(  InBasisType , "FEM::RiemannianMesh::dMatrix" , false );
@@ -1763,10 +1763,10 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::dM
 
 	Pointer( std::atomic< int > ) rowSizes = NullPointer< std::atomic< int > >();
 #ifdef EIGEN_WORLD_VERSION
-	std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > > D;
+	std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > D;
 	std::vector< Eigen::Triplet< Real > > triplets;
 #else // !EIGEN_WORLD_VERSION
-	SparseMatrix::SparseMatrix< Real , int > D;
+	SparseMatrix< Real , int > D;
 #endif // EIGEN_WORLD_VERSION
 
 #ifdef EIGEN_WORLD_VERSION
@@ -1848,12 +1848,12 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::dM
 		if( BasisInfo< OutBasisType >::ElementType==ELEMENT_VERTEX )
 		{
 			valence.resize( _vCount , 0 );
-			ThreadPool::ParallelFor( 0 , _tCount , [&]( unsigned int , size_t t ){ for( int v=0 ; v<3 ; v++ ) MishaK::Atomic::AddAtomic( valence[ _triangles[t][v] ] , 1 ); } );
+			ThreadPool::ParallelFor( 0 , _tCount , [&]( unsigned int , size_t t ){ for( int v=0 ; v<3 ; v++ ) AddAtomic( valence[ _triangles[t][v] ] , 1 ); } );
 		}
 		else if( BasisInfo< OutBasisType >::ElementType==ELEMENT_EDGE )
 		{
 			valence.resize( _edgeMap.size() , 0 );
-			ThreadPool::ParallelFor( 0 , _tCount , [&]( unsigned int , size_t t ){ for( int e=0 ; e<3 ; e++ ) MishaK::Atomic::AddAtomic( valence[ _edgeMap.edge( (int)t*3+e ) ] , 1 ); } );
+			ThreadPool::ParallelFor( 0 , _tCount , [&]( unsigned int , size_t t ){ for( int e=0 ; e<3 ; e++ ) AddAtomic( valence[ _edgeMap.edge( (int)t*3+e ) ] , 1 ); } );
 		}
 		else TestElementType( BasisInfo< OutBasisType >::ElementType , "FEM::RiemannianMesh::dMatrix" , true );
 
@@ -1890,17 +1890,17 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::dM
 template< class Real , typename Index >
 #ifdef EIGEN_WORLD_VERSION
 template< unsigned int BasisType , unsigned int PreBasisType , unsigned int PostBasisType , bool UseEigen >
-std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > > FEM::RiemannianMesh< Real , Index >::stiffnessMatrix( ConstPointer( SquareMatrix< Real , 2 > ) newTensors ) const
+std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > FEM::RiemannianMesh< Real , Index >::stiffnessMatrix( ConstPointer( SquareMatrix< Real , 2 > ) newTensors ) const
 #else // !EIGEN_WORLD_VERSION
 template< unsigned int BasisType , unsigned int PreBasisType , unsigned int PostBasisType >
-SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::stiffnessMatrix( ConstPointer( SquareMatrix< Real , 2 > ) newTensors ) const
+SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::stiffnessMatrix( ConstPointer( SquareMatrix< Real , 2 > ) newTensors ) const
 #endif // EIGEN_WORLD_VERSION
 {
 #ifdef EIGEN_WORLD_VERSION
-	using Matrix = std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > >;
+	using Matrix = std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > >;
 	auto MassMatrixInverse = [] ( const Matrix& M )
 #else // !EIGEN_WORLD_VERSION
-	auto MassMatrixInverse = [] ( const SparseMatrix::SparseMatrix< Real , int >& M )
+	auto MassMatrixInverse = [] ( const SparseMatrix< Real , int >& M )
 #endif // EIGEN_WORLD_VERSION
 	{
 #ifdef EIGEN_WORLD_VERSION
@@ -1924,7 +1924,7 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::st
 		else
 #endif // EIGEN_WORLD_VERSION
 		{
-			SparseMatrix::SparseMatrix< Real , int > M_inverse;
+			SparseMatrix< Real , int > M_inverse;
 			M_inverse.resize( M.rows );
 			ThreadPool::ParallelFor
 			(
@@ -1944,7 +1944,7 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::st
 #ifdef EIGEN_WORLD_VERSION
 	Matrix S;
 #else // !EIGEN_WORLD_VERSION
-	SparseMatrix::SparseMatrix< Real , int > S;
+	SparseMatrix< Real , int > S;
 #endif // EIGEN_WORLD_VERSION
 	TestBasisType( BasisType , "FEM::RiemannianMesh::stiffnessMatrix" , false );
 	switch( BasisInfo< BasisType >::Dimension )
@@ -1957,8 +1957,8 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::st
 			Matrix M2 = massMatrix< PostBasisType , UseEigen >( BasisInfo< BasisType >::Lumpable , newTensors );
 			Matrix D1 = dMatrix< BasisType , PostBasisType , UseEigen >( );
 #else // !EIGEN_WORLD_VERSION
-			SparseMatrix::SparseMatrix< Real , int > M2 = massMatrix< PostBasisType >( BasisInfo< BasisType >::Lumpable , newTensors );
-			SparseMatrix::SparseMatrix< Real , int > D1 = dMatrix< BasisType , PostBasisType >( );
+			SparseMatrix< Real , int > M2 = massMatrix< PostBasisType >( BasisInfo< BasisType >::Lumpable , newTensors );
+			SparseMatrix< Real , int > D1 = dMatrix< BasisType , PostBasisType >( );
 #endif // EIGEN_WORLD_VERSION
 			S = D1.transpose() * M2 * D1;
 
@@ -1977,11 +1977,11 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::st
 			Matrix D0 = dMatrix< PreBasisType ,     BasisType , UseEigen >( );
 			Matrix D1 = dMatrix<    BasisType , PostBasisType , UseEigen >( );
 #else // !EIGEN_WORLD_VERSION
-			SparseMatrix::SparseMatrix< Real , int > M0 = massMatrix<  PreBasisType >( true , newTensors );
-			SparseMatrix::SparseMatrix< Real , int > M1 = massMatrix<     BasisType >( BasisInfo< BasisType >::Lumpable , newTensors );
-			SparseMatrix::SparseMatrix< Real , int > M2 = massMatrix< PostBasisType >( BasisInfo< BasisType >::Lumpable , newTensors );
-			SparseMatrix::SparseMatrix< Real , int > D0 = dMatrix< PreBasisType ,     BasisType >( );
-			SparseMatrix::SparseMatrix< Real , int > D1 = dMatrix<    BasisType , PostBasisType >( );
+			SparseMatrix< Real , int > M0 = massMatrix<  PreBasisType >( true , newTensors );
+			SparseMatrix< Real , int > M1 = massMatrix<     BasisType >( BasisInfo< BasisType >::Lumpable , newTensors );
+			SparseMatrix< Real , int > M2 = massMatrix< PostBasisType >( BasisInfo< BasisType >::Lumpable , newTensors );
+			SparseMatrix< Real , int > D0 = dMatrix< PreBasisType ,     BasisType >( );
+			SparseMatrix< Real , int > D1 = dMatrix<    BasisType , PostBasisType >( );
 #endif // EIGEN_WORLD_VERSION
 #if 1
 			S = M1 * D0 * MassMatrixInverse( M0 ) * D0.transpose() * M1 + D1.transpose() * M2 * D1;
@@ -2000,9 +2000,9 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::st
 			Matrix M1 = massMatrix<    BasisType , UseEigen >( BasisInfo< BasisType >::Lumpable , newTensors );
 			Matrix D0 = dMatrix< PreBasisType , BasisType , UseEigen >( );
 #else // !EIGEN_WORLD_VERSION
-			SparseMatrix::SparseMatrix< Real , int > M0 = massMatrix< PreBasisType >( true , newTensors );
-			SparseMatrix::SparseMatrix< Real , int > M1 = massMatrix<    BasisType >( BasisInfo< BasisType >::Lumpable , newTensors );
-			SparseMatrix::SparseMatrix< Real , int > D0 = dMatrix< PreBasisType , BasisType >( );
+			SparseMatrix< Real , int > M0 = massMatrix< PreBasisType >( true , newTensors );
+			SparseMatrix< Real , int > M1 = massMatrix<    BasisType >( BasisInfo< BasisType >::Lumpable , newTensors );
+			SparseMatrix< Real , int > D0 = dMatrix< PreBasisType , BasisType >( );
 #endif // EIGEN_WORLD_VERSION
 			S = M1 * D0 * MassMatrixInverse( M0 ) * D0.transpose() * M1;
 			break;
@@ -2035,15 +2035,15 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::st
 template< class Real , typename Index >
 #ifdef EIGEN_WORLD_VERSION
 template< unsigned int BasisType , bool UseEigen >
-std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > > FEM::RiemannianMesh< Real , Index >::stiffnessMatrix( void ) const
+std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > FEM::RiemannianMesh< Real , Index >::stiffnessMatrix( void ) const
 #else // !EIGEN_WORLD_VERSION
 template< unsigned int BasisType >
-SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::stiffnessMatrix( void ) const
+SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::stiffnessMatrix( void ) const
 #endif // EIGEN_WORLD_VERSION
 {
 	TestBasisType( BasisType , "FEM::RiemannianMesh::stiffnessMatrix" , false );
 #ifdef EIGEN_WORLD_VERSION
-	std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > > S;
+	std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > S;
 	switch( BasisInfo< BasisType >::Dimension )
 	{
 	case 0: S = stiffnessMatrix< BasisType , BasisType , BASIS_1_WHITNEY , UseEigen >( ) ; break;
@@ -2055,7 +2055,7 @@ SparseMatrix::SparseMatrix< Real , int > FEM::RiemannianMesh< Real , Index >::st
 	default: TestBasisType( BasisType , "FEM::RiemannianMesh::stiffnessMatrix" , true );
 }
 #else // !EIGEN_WORLD_VERSION
-	SparseMatrix::SparseMatrix< Real , int > S;
+	SparseMatrix< Real , int > S;
 	switch( BasisInfo< BasisType >::Dimension )
 	{
 	case 0: S = stiffnessMatrix< BasisType , BasisType       , BASIS_1_WHITNEY >( ) ; break;

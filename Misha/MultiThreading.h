@@ -89,8 +89,11 @@ namespace MishaK
 			for( unsigned int i=0 ; i<futures.size() ; i++ ) futures[i].get();
 		}
 
-		static void ParallelFor( size_t begin , size_t end , const std::function< void ( unsigned int , size_t ) > &iterationFunction , unsigned int numThreads=_NumThreads , ParallelType pType=ParallelizationType , ScheduleType schedule=Schedule , size_t chunkSize=ChunkSize )
+		template< typename Kernel /* = std::function< void  ( unsigned int , size_t ) >*/ >
+		static void ParallelFor( size_t begin , size_t end , Kernel && kernel , unsigned int numThreads=_NumThreads , ParallelType pType=ParallelizationType , ScheduleType schedule=Schedule , size_t chunkSize=ChunkSize )
 		{
+			static_assert( std::is_convertible_v< Kernel , std::function< void ( unsigned int , size_t  ) > > || std::is_convertible_v< Kernel , std::function< void ( size_t  ) > > , "[ERROR] Kernel poorly formed" );
+			static const bool NeedsThread = std::is_convertible_v< Kernel , std::function< void ( unsigned int , size_t  ) > >;
 			if( begin>=end ) return;
 			size_t range = end - begin;
 			size_t chunks = ( range + chunkSize - 1 ) / chunkSize;
@@ -100,7 +103,9 @@ namespace MishaK
 			// If the computation is serial, go ahead and run it
 			if( pType==ParallelType::NONE || numThreads<=1 )
 			{
-				for( size_t i=begin ; i<end ; i++ ) iterationFunction( 0 , i );
+				for( size_t i=begin ; i<end ; i++ )
+					if constexpr( NeedsThread ) kernel( 0 , i );
+					else                        kernel( i );
 				return;
 			}
 
@@ -111,11 +116,13 @@ namespace MishaK
 				chunks = numThreads = (unsigned int)( ( range + chunkSize - 1 ) / chunkSize );
 			}
 
-			std::function< void (unsigned int , size_t ) > _ChunkFunction = [ &iterationFunction , begin , end , chunkSize ]( unsigned int thread , size_t chunk )
+			std::function< void (unsigned int , size_t ) > _ChunkFunction = [ &kernel , begin , end , chunkSize ]( unsigned int thread , size_t chunk )
 				{
 					const size_t _begin = begin + chunkSize*chunk;
 					const size_t _end = std::min< size_t >( end , _begin+chunkSize );
-					for( size_t i=_begin ; i<_end ; i++ ) iterationFunction( thread , i );
+					for( size_t i=_begin ; i<_end ; i++ )
+						if constexpr( NeedsThread ) kernel( thread , i );
+						else                        kernel( i );
 				};
 
 			std::function< void (unsigned int ) > _StaticThreadFunction = [ &_ChunkFunction , chunks , numThreads ]( unsigned int thread )
@@ -173,7 +180,7 @@ namespace MishaK
 			futures.push_back( std::async( std::launch::async , function ) );
 			if constexpr( sizeof...(Functions) ) _ParallelSections( futures , std::move(functions)... );
 		}
-	};
+		};
 
 	//inline ThreadPool::ParallelType ThreadPool::ParallelizationType = ThreadPool::ParallelType::NONE; // Default is threading disabled
 	inline ThreadPool::ParallelType ThreadPool::ParallelizationType = (ThreadPool::ParallelType)0; // Default is threading enable

@@ -55,6 +55,23 @@ DAMAGE.
 #include "MultiThreading.h"
 #include "Atomic.h"
 
+#ifdef INCLUDE_EXTRA_FEM
+#undef SUPPORT_LINEAR_PROGRAM
+#include <math.h>
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
+#include <atomic>
+#include "lineqn.h"
+#include "ThreadPool.h"
+#include "Atomic.h"
+#ifdef SUPPORT_LINEAR_PROGRAM
+#include <Eigen/Dense>
+#define IL_STD
+#include <ilcplex/ilocplex.h>
+#endif // SUPPORT_LINEAR_PROGRAM
+#endif // INCLUDE_EXTRA_FEM
+
 
 /************ Notes ****************
 -.The evaluation w.r.t. to some bases can be metric dependent:
@@ -78,10 +95,6 @@ namespace MishaK
 {
 	namespace FEM
 	{	
-		using namespace Array;
-		using namespace Geometry;
-		using namespace SparseMatrixInterface;
-
 		//////////////
 		// Elements //
 		//////////////
@@ -128,17 +141,17 @@ namespace MishaK
 			static const unsigned int Coefficients;
 			static const bool Singular;
 		};
-#include "FEM.BasisInfo.h"
+#include "FEM.BasisInfo.inc"
 		template< class Real , unsigned int Type > struct BasisInfoSystem
 		{
-			typedef Geometry::SquareMatrix<          Real , BasisInfo< Type >::Coefficients >     Matrix;
-			typedef Geometry::SquareMatrix< unsigned char , BasisInfo< Type >::Coefficients > MaskMatrix;
-			typedef Geometry::Point       <          Real , BasisInfo< Type >::Coefficients >      Point;
+			typedef MishaK::SquareMatrix<          Real , BasisInfo< Type >::Coefficients >     Matrix;
+			typedef MishaK::SquareMatrix< unsigned char , BasisInfo< Type >::Coefficients > MaskMatrix;
+			typedef MishaK::Point       <          Real , BasisInfo< Type >::Coefficients >      Point;
 		};
 		template< class Real , unsigned int InType , unsigned int OutType > struct BasisInfoSystem2
 		{
-			typedef Geometry::Matrix< unsigned char , BasisInfo< InType >::Coefficients , BasisInfo< OutType >::Coefficients > MaskMatrix;
-			typedef Geometry::Matrix<          Real , BasisInfo< InType >::Coefficients , BasisInfo< OutType >::Coefficients >     Matrix;
+			typedef MishaK::Matrix< unsigned char , BasisInfo< InType >::Coefficients , BasisInfo< OutType >::Coefficients > MaskMatrix;
+			typedef MishaK::Matrix<          Real , BasisInfo< InType >::Coefficients , BasisInfo< OutType >::Coefficients >     Matrix;
 		};
 
 		static void TestBasisType( unsigned int BasisType , const char* header , bool forceFailure )
@@ -249,7 +262,7 @@ namespace MishaK
 			};
 
 			template< unsigned int Degree >
-			struct TangentVectorField : public Algebra::VectorSpace< Real , TangentVectorField< Degree > > , public std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >
+			struct TangentVectorField : public VectorSpace< Real , TangentVectorField< Degree > > , public std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >
 			{
 				using std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >::first;
 				using std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >::second;
@@ -262,7 +275,7 @@ namespace MishaK
 			};
 
 			template< unsigned int Degree >
-			struct CotangentVectorField : public Algebra::VectorSpace< Real , CotangentVectorField< Degree > > , public std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >
+			struct CotangentVectorField : public VectorSpace< Real , CotangentVectorField< Degree > > , public std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >
 			{
 				using std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >::first;
 				using std::pair< Polynomial::Polynomial< 2 , Degree , Real > , Polynomial::Polynomial< 2 , Degree , Real > >::second;
@@ -335,7 +348,7 @@ namespace MishaK
 		};
 		// Transformations taking points/directions in one coordinate frame to points/directions in the other
 		template< class Real >
-		struct CoordinateXForm : public Algebra::Group< CoordinateXForm< Real > >
+		struct CoordinateXForm : public Group< CoordinateXForm< Real > >
 		{
 			SquareMatrix< Real , 2 > linear;
 			Point2D< Real > constant;
@@ -450,24 +463,24 @@ namespace MishaK
 			/////////////////////////
 #ifdef EIGEN_WORLD_VERSION 
 			template< unsigned int BasisType , bool UseEigen=false >
-			std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > > massMatrix( bool lump=false , ConstPointer( SquareMatrix< Real , 2 > ) newTensors = NullPointer< SquareMatrix< Real , 2 > >() ) const;
+			std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > massMatrix( bool lump=false , ConstPointer( SquareMatrix< Real , 2 > ) newTensors = NullPointer< SquareMatrix< Real , 2 > >() ) const;
 			template< unsigned int InBasisType , unsigned int OutBasisType , bool UseEigen=false >
-			std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > > dMatrix( void ) const;
+			std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > dMatrix( void ) const;
 			template< unsigned int BasisType , unsigned int PreBasisType , unsigned int PostBasisType , bool UseEigen=false >
-			std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > > stiffnessMatrix( ConstPointer( SquareMatrix< Real , 2 > ) newTensors = NullPointer< SquareMatrix< Real , 2 > >() ) const;
+			std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > stiffnessMatrix( ConstPointer( SquareMatrix< Real , 2 > ) newTensors = NullPointer< SquareMatrix< Real , 2 > >() ) const;
 			template< unsigned int BasisType , bool UseEigen=false >
-			std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > > stiffnessMatrix( void ) const;
+			std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > > stiffnessMatrix( void ) const;
 
 			template< unsigned int BasisType , unsigned int Degree , bool UseEigen=false , typename CotangentVectorFieldFunctor = std::function< typename RightTriangle< Real >::template CotangentVectorField< Degree > ( unsigned int tIdx ) > >
-			std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix::SparseMatrix< Real , int > >  derivation( CotangentVectorFieldFunctor v ) const;
+			std::conditional_t< UseEigen , Eigen::SparseMatrix< Real > , SparseMatrix< Real , int > >  derivation( CotangentVectorFieldFunctor v ) const;
 #else // !EIGEN_WORLD_VERSION 
-			template< unsigned int BasisType > SparseMatrix::SparseMatrix< Real , int > massMatrix( bool lump=false , ConstPointer( SquareMatrix< Real , 2 > ) newTensors = NullPointer< SquareMatrix< Real , 2 > >() ) const;
-			template< unsigned int InBasisType , unsigned int OutBasisType > SparseMatrix::::< Real , int > dMatrix( void ) const;
-			template< unsigned int BasisType , unsigned int PreBasisType , unsigned int PostBasisType > SparseMatrix::SparseMatrix< Real , int > stiffnessMatrix( ConstPointer( SquareMatrix< Real , 2 > ) newTensors = NullPointer< SquareMatrix< Real , 2 > >() ) const;
-			template< unsigned int BasisType > SparseMatrix::SparseMatrix< Real , int > stiffnessMatrix( void ) const;
+			template< unsigned int BasisType > SparseMatrix< Real , int > massMatrix( bool lump=false , ConstPointer( SquareMatrix< Real , 2 > ) newTensors = NullPointer< SquareMatrix< Real , 2 > >() ) const;
+			template< unsigned int InBasisType , unsigned int OutBasisType > SparseMatrix< Real , int > dMatrix( void ) const;
+			template< unsigned int BasisType , unsigned int PreBasisType , unsigned int PostBasisType > SparseMatrix< Real , int > stiffnessMatrix( ConstPointer( SquareMatrix< Real , 2 > ) newTensors = NullPointer< SquareMatrix< Real , 2 > >() ) const;
+			template< unsigned int BasisType > SparseMatrix< Real , int > stiffnessMatrix( void ) const;
 
 			template< unsigned int BasisType , unsigned int Degree , typename CotangentVectorFieldFunctor /* = std::function< RightTriangle< Real >::CotangentVectorField< Degree > ( unsigned int tIdx ) > */ >
-			SparseMatrix::SparseMatrix< Real , int > derivation( CotangentVectorFieldFunctor v ) const;
+			SparseMatrix< Real , int > derivation( CotangentVectorFieldFunctor v ) const;
 #endif // EIGEN_WORLD_VERSION
 
 			// Integrate the piecewise linear function over the mesh
@@ -505,23 +518,22 @@ namespace MishaK
 			Pointer( SquareMatrix< Real , 2 > ) _gInverse;
 			ConstPointer( Real ) _coefficients;
 		};
+	}
+	template< class Real > const char* FEM::RightTriangle< Real >::CenterNames[] = { "barycentric" , "circumcentric" , "incentric" , "isogonic" };
 
-		template< class Real > const char* RightTriangle< Real >::CenterNames[] = { "barycentric" , "circumcentric" , "incentric" , "isogonic" };
+	template< class Real > const Point2D< Real > FEM::RightTriangle< Real >::Corners        [] = { Point2D< Real >(0,0) , Point2D< Real >(1,0) , Point2D< Real >(0,1) };
+	template< class Real > const Point2D< Real > FEM::RightTriangle< Real >::EdgeMidpoints  [] = { Point2D< Real >((Real)0.5,(Real)0.5) , Point2D< Real >(0,(Real)0.5) , Point2D< Real >((Real)0.5,0) };
+	template< class Real > const FEM::CotangentVector< Real > FEM::RightTriangle< Real >::CornerDifferentials[] = { FEM::CotangentVector< Real >( Point2D< Real >(-1,-1) ) , FEM::CotangentVector< Real >( Point2D< Real >( 1, 0) ) , FEM::CotangentVector< Real >( Point2D< Real >( 0,1) ) };
+	template< class Real > const FEM::  TangentVector< Real > FEM::RightTriangle< Real >::EdgeDirections [] = { FEM::  TangentVector< Real >( Point2D< Real >(-1, 1) ) , FEM::  TangentVector< Real >( Point2D< Real >( 0,-1) ) , FEM::  TangentVector< Real >( Point2D< Real >( 1,0) ) };
 
-		template< class Real > const Point2D< Real > RightTriangle< Real >::Corners        [] = { Point2D< Real >(0,0) , Point2D< Real >(1,0) , Point2D< Real >(0,1) };
-		template< class Real > const Point2D< Real > RightTriangle< Real >::EdgeMidpoints  [] = { Point2D< Real >((Real)0.5,(Real)0.5) , Point2D< Real >(0,(Real)0.5) , Point2D< Real >((Real)0.5,0) };
-		template< class Real > const CotangentVector< Real > RightTriangle< Real >::CornerDifferentials[] = { CotangentVector< Real >( Point2D< Real >(-1,-1) ) , CotangentVector< Real >( Point2D< Real >( 1, 0) ) , CotangentVector< Real >( Point2D< Real >( 0,1) ) };
-		template< class Real > const   TangentVector< Real > RightTriangle< Real >::EdgeDirections [] = { TangentVector< Real >( Point2D< Real >(-1, 1) ) , TangentVector< Real >( Point2D< Real >( 0,-1) ) , TangentVector< Real >( Point2D< Real >( 1,0) ) };
-
-		template<> inline const unsigned int ElementInfo< ELEMENT_VERTEX   >::ElementsPerTriangle = 3;
-		template<> inline const unsigned int ElementInfo< ELEMENT_EDGE     >::ElementsPerTriangle = 3;
-		template<> inline const unsigned int ElementInfo< ELEMENT_TRIANGLE >::ElementsPerTriangle = 1;
+	template<> inline const unsigned int FEM::ElementInfo< FEM::ELEMENT_VERTEX   >::ElementsPerTriangle = 3;
+	template<> inline const unsigned int FEM::ElementInfo< FEM::ELEMENT_EDGE     >::ElementsPerTriangle = 3;
+	template<> inline const unsigned int FEM::ElementInfo< FEM::ELEMENT_TRIANGLE >::ElementsPerTriangle = 1;
 
 #include "FEM.inl"
 
 #ifdef INCLUDE_EXTRA_FEM
 #include "FEM_Extra.h"
 #endif // INCLUDE_EXTRA_FEM
-	}
 }
 #endif // FEM_INCLUDED

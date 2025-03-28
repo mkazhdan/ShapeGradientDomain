@@ -220,11 +220,7 @@ bool Polynomial< 0 , Degree , Real >::_print( std::ostream &ostream , const std:
 }
 
 template< unsigned int Degree , typename Real >
-#ifdef NEW_GEOMETRY_CODE
 Matrix< Real , Polynomial< 0 , Degree , Real >::NumCoefficients , Polynomial< 0 , Degree , Real >::NumCoefficients > Polynomial< 0 , Degree , Real >::EvaluationMatrix( const Point< Real , 0 > positions[NumCoefficients] )
-#else // !NEW_GEOMETRY_CODE
-SquareMatrix< Real , Polynomial< 0 , Degree , Real >::NumCoefficients > Polynomial< 0 , Degree , Real >::EvaluationMatrix( const Point< Real , 0 > positions[NumCoefficients] )
-#endif // NEW_GEOMETRY_CODE
 {
 	SquareMatrix< Real , NumCoefficients > E;
 	E(0,0) = 1;
@@ -515,6 +511,14 @@ Polynomial< _Dim-1 , Degree , Real > Polynomial< Dim , Degree , Real >::pullBack
 }
 
 template< unsigned int Dim , unsigned int Degree , typename Real >
+Polynomial< 1 , Degree , Real > Polynomial< Dim , Degree , Real >::operator()( const Ray< Real , Dim > & ray ) const
+{
+	Matrix< Real , 2 , Dim > A;
+	for( unsigned int i=0 ; i<Dim ; i++ ) A(0,i) = ray.direction[i] , A(1,i) = ray.position[i];
+	return _pullBack< 1 >( A , Degree );
+}
+
+template< unsigned int Dim , unsigned int Degree , typename Real >
 Real Polynomial< Dim , Degree , Real >::integrateUnitCube( void ) const
 {
 	// I_d = \int_0^1 ... \int_0^1 x_n^d * P_d(x_1,...,x_{n-1}) dx_n ... dx_1
@@ -553,11 +557,7 @@ Real Polynomial< Dim , Degree , Real >::integrateUnitRightSimplex( void ) const
 }
 
 template< unsigned int Dim , unsigned int Degree , typename Real >
-#ifdef NEW_GEOMETRY_CODE
 Matrix< Real , Polynomial< Dim , Degree , Real >::NumCoefficients , Polynomial< Dim , Degree , Real >::NumCoefficients > Polynomial< Dim , Degree , Real >::EvaluationMatrix( const Point< Real , Dim > positions[NumCoefficients] )
-#else // !NEW_GEOMETRY_CODE
-SquareMatrix< Real , Polynomial< Dim , Degree , Real >::NumCoefficients > Polynomial< Dim , Degree , Real >::EvaluationMatrix( const Point< Real , Dim > positions[NumCoefficients] )
-#endif // NEW_GEOMETRY_CODE
 {
 	SquareMatrix< Real , NumCoefficients > E;
 	unsigned int degrees[ Dim ];
@@ -703,7 +703,7 @@ inline unsigned int Roots( const Polynomial< 1 , 3 , double > &p , double *r , d
 		return Roots( _p , r+1 , eps )+1;
 	}
 	else if( !p.coefficient(3u) ) return Roots( Polynomial< 1 , 2 , double >( p ) , r , eps );
-	return Poly34::SolveP3( r , p.coefficient(2u)/p.coefficient(3u) , p.coefficient(1u)/p.coefficient(3u) , p.coefficient(0u)/p.coefficient(3u) , eps );
+	return SergeyKhashin::Poly34::SolveP3( r , p.coefficient(2u)/p.coefficient(3u) , p.coefficient(1u)/p.coefficient(3u) , p.coefficient(0u)/p.coefficient(3u) , eps );
 }
 
 template<>
@@ -717,7 +717,7 @@ inline unsigned int Roots( const Polynomial< 1 , 4 , double > &p , double *r , d
 		return Roots( _p , r+1 , eps )+1;
 	}
 	else if( !p.coefficient(4u) ) return Roots( Polynomial< 1 , 3 , double >( p ) , r , eps );
-	return Poly34::SolveP4( r , p.coefficient(3u)/p.coefficient(4u) , p.coefficient(2u)/p.coefficient(4u) , p.coefficient(1u)/p.coefficient(4u) , p.coefficient(0u)/p.coefficient(4u) , eps );
+	return SergeyKhashin::Poly34::SolveP4( r , p.coefficient(3u)/p.coefficient(4u) , p.coefficient(2u)/p.coefficient(4u) , p.coefficient(1u)/p.coefficient(4u) , p.coefficient(0u)/p.coefficient(4u) , eps );
 }
 
 template<>
@@ -731,5 +731,5 @@ inline unsigned int Roots( const Polynomial< 1 , 5 , double > &p , double *r , d
 		return Roots( _p , r+1 , eps )+1;
 	}
 	else if( !p.coefficient(5u) ) return Roots( Polynomial< 1 , 4 , double >( p ) , r , eps );
-	return Poly34::SolveP5( r , p.coefficient(4u)/p.coefficient(5u) , p.coefficient(3u)/p.coefficient(5u) , p.coefficient(2u)/p.coefficient(5u) , p.coefficient(1u)/p.coefficient(5u) , p.coefficient(0u)/p.coefficient(5u) , eps );
+	return SergeyKhashin::Poly34::SolveP5( r , p.coefficient(4u)/p.coefficient(5u) , p.coefficient(3u)/p.coefficient(5u) , p.coefficient(2u)/p.coefficient(5u) , p.coefficient(1u)/p.coefficient(5u) , p.coefficient(0u)/p.coefficient(5u) , eps );
 }

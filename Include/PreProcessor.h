@@ -33,7 +33,7 @@ DAMAGE.
 #define NOMINMAX
 #endif // _WIN32 || _WIN64
 
-//#define EIGEN_USE_MKL_ALL		// Accelerate Eigen performance by using the MKL
+//B#define EIGEN_USE_MKL_ALL		// Accelerate Eigen performance by using the MKL
 
 
 #endif // PRE_PROCESSOR_INCLUDED

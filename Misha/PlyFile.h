@@ -35,13 +35,16 @@ WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 #include <string>
 #include <vector>
 
-#include <cstddef>
-#include <cstdio>
 #include <cstdlib>
-#include <cmath>
+#include <cstdio>
+#include <cstddef>
 #include <cstring>
+#include <cmath>
 #include "Exceptions.h"
+#include "PlyFile.h"
 
+namespace GregTurk
+{
 #define PLY_ASCII         1      /* ascii PLY file */
 #define PLY_BINARY_BE     2      /* binary PLY file, big endian */
 #define PLY_BINARY_LE     3      /* binary PLY file, little endian */
@@ -50,7 +53,7 @@ WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 #define PLY_OKAY    0           /* ply routine worked okay */
 #define PLY_ERROR  -1           /* error in ply routine */
 
-/* scalar data types supported by PLY format */
+	/* scalar data types supported by PLY format */
 
 #define PLY_START_TYPE 0
 #define PLY_CHAR       1
@@ -81,8 +84,6 @@ WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 
 #define PLY_STRIP_COMMENT_HEADER 0
 
-namespace PlyFile
-{
 	const std::string PlyTypes[]
 	{
 		"start type" ,
@@ -231,6 +232,7 @@ namespace PlyFile
 		static inline PlyFile *_Write( FILE * , const std::vector< std::string > & , int );
 		static inline PlyFile *_Read ( FILE * ,       std::vector< std::string > & );
 	};
+
 #include "PlyFile.inl"
 }
 #endif // PLY_FILE_INCLUDED

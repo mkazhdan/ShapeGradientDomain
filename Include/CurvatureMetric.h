@@ -38,8 +38,6 @@ namespace MishaK
 {
 	namespace CurvatureMetric
 	{
-		using namespace Geometry;
-
 		template< typename Real , unsigned int K >
 		SquareMatrix< Real , K > SecondFundamentalForm( Simplex< Real , K+1 , K > s , const Point< Real , K+1 > n[K+1] , bool symmetric=true );
 
